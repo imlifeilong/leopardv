@@ -1,0 +1,181 @@
+{% extends 'index.html' %}
+{% block content %}
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1>
+            节点管理
+        </h1>
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i> 主页</a></li>
+            <li><a href="#">节点管理</a></li>
+        </ol>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">节点列表</h3>
+                    </div>
+                    <!-- /.box-header -->
+                    <div class="box-body">
+                        <table id="node-list" class="table table-bordered table-hover">
+                            <thead>
+                            <tr>
+                                <th style="width: 5%">序号</th>
+                                <th style="width: 5%">状态</th>
+                                <th style="width: 15%">节点名</th>
+                                <th style="width: 15%">IP地址</th>
+                                <th style="width: 10%">端口</th>
+                                <th style="width: 15%">平台</th>
+                                <th style="width: 25%">描述</th>
+                                <th>操作</th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                    <!-- /.box-body -->
+                    <div class="modal fade" id="node-detail-model" style="display: none;">
+                        <div style="position: absolute;left: 35%;top: 25%;border-radius: 8px;width: 50%;height: 40%;">
+
+                            <div class="box">
+                                <div class="box-header with-border">
+                                    <h3 class="box-title">工程列表</h3>
+                                </div>
+                                <table class="table table-bordered table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th>节点</th>
+                                        <th>工程</th>
+                                        <th>操作</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="project-list">
+                                    </tbody>
+                                </table>
+
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.box-body -->
+                    <div class="modal fade" id="node-deploy" style="display: none;">
+                        <div class="text-center"
+                             style="position: absolute;left: 35%;top: 25%;border-radius: 8px;width: 50%;height: 40%;">
+                            <div class="box">
+                                <div class="box-header with-border">
+                                    <h3 class="box-title">工程部署</h3>
+                                </div>
+                                <!-- /.box-header -->
+                                <!-- form modify start -->
+                                <form action="/api/file/upload/" class="form-horizontal" method="post"
+                                      id="node-deploy-model" enctype="multipart/form-data">
+                                    <div class="box-body">
+                                        <div class="form-group">
+                                            <label for="inputEmail3" class="col-sm-2 control-label">选择工程</label>
+
+                                            <div class="col-sm-9">
+                                                <input type="hidden" name="node-address">
+                                                <input type="file" name="node-file-name" class="form-control">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- /.box-body -->
+                                    <div class="box-footer">
+
+                                        <button type="submit" id="node-deploy-submit" class="btn btn-info pull-right">
+                                            确定
+                                        </button>
+                                    </div>
+                                    <!-- /.box-footer -->
+                                </form>
+                                <!-- form modify end -->
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.box -->
+            </div>
+            <!-- /.col -->
+        </div>
+        <!-- /.row -->
+    </section>
+    <!-- /.content -->
+{% endblock %}
+{% block js %}
+    <script>
+        function showDesc(row) {
+            $("#show-desc" + row).css("display", "none");
+            $("#hide-desc" + row).css("display", "block");
+        }
+
+        function hideDesc(row) {
+            $("#hide-desc" + row).css("display", "none");
+            $("#show-desc" + row).css("display", "block");
+        }
+
+        function parseStatus(code) {
+            var status = '';
+            if (code == 1) {
+                status = '<span class="label label-success">正常</span>'
+            } else {
+                status = '<span class="label label-danger">异常</span>'
+            }
+            return status
+        }
+
+    </script>
+    <script>
+        function nodeStatus() {
+            var nids = [];
+            $('#node-list td.node-status').each(function () {
+                nids.push($(this).attr('id'));
+            });
+            $.ajax({
+                url: '/api/node/',
+                type: 'post',
+                data: {nids: nids},
+                dataType: 'json',
+                success: function (res) {
+                    if (res.status) {
+                        $.each(res.data, function (k, v) {
+                            $('#' + v.nid).html(parseStatus(v.status));
+                        })
+                    }
+                }
+            })
+        }
+    </script>
+    <script>
+        $(document).ready(function () {
+            self.setInterval("nodeStatus()", 30000);
+            var tbody = '<tbody>';
+            $.ajax({
+                url: '/api/node/',
+                type: 'get',
+                dataType: 'json',
+                success: function (res) {
+                    $.each(res, function (k, v) {
+
+                        var show = v.description.length > 10 ? v.description.substring(0, 15) + '.....<a href="javascript:void(0);" onclick="showDesc(' + k + ')">更多</a>' : v.description;
+                        var hide = v.description + '<a href="javascript:void(0);" onclick="hideDesc(' + k + ')"> 收起</a>';
+                        tbody += '<tr><td>' + parseInt(k + 1) + '</td>' +
+                            '<td id="' + v.nid + '" class="node-status">' + parseStatus(v.status) + '</td>' +
+                            '<td>' + v.name + '</td>' +
+                            '<td>' + v.ip + '</td>' +
+                            '<td>' + v.port + '</td>' +
+                            '<td>' + v.platform + '</td>' +
+                            '<td id="show-desc' + k + '">' + show + '</td>' +
+                            '<td id="hide-desc' + k + '" style="display: none;">' + hide + '</td>' +
+                            '<td><a href="/node/' + v.nid + '">查看</a>' +
+                            '</td></tr>'
+                    });
+                    tbody += '</tbody>';
+                    $('#node-list').append(tbody)
+                }
+            })
+        })
+    </script>
+{% endblock %}

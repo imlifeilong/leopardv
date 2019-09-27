@@ -1,0 +1,175 @@
+{% extends 'index.html' %}
+{% block content %}
+    <section class="content-header">
+        <h1>
+            节点详情
+        </h1>
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i> 主页</a></li>
+            <li><a href="#">节点详情</a></li>
+        </ol>
+    </section>
+    <section class="content">
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="box">
+                    <div class="box-header with-border">
+                        <h3 class="box-title">工程部署</h3>
+                    </div>
+                    <div>
+                        <form class="form-horizontal">
+                            {% csrf_token %}
+                            <input id="nid" hidden value="{{ nid }}">
+                            <div class="box-body">
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">节点名</label>
+
+                                    <div class="col-sm-7">
+                                        <input type="text" name="name" class="form-control" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">IP地址</label>
+
+                                    <div class="col-sm-7">
+                                        <input type="text" name="ip" class="form-control" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">描述</label>
+
+                                    <div class="col-sm-7">
+                                        <textarea name="description" class="form-control" rows="2" readonly></textarea>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">选择工程</label>
+                                    <div class="col-sm-7">
+                                        <input type="file" id="project-file" class="form-control" value="工程文件">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">备注</label>
+
+                                    <div class="col-sm-7">
+                                        <textarea name="project-description" class="form-control" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="box-footer">
+                                <div class="col-lg-9">
+                                    <button type="button" class="btn pull-right" id="project-depoly"> 部 署</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">工程列表</h3>
+                    </div>
+
+                    <div class="box-body">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                            <tr>
+                                <th style="width: 5%">序号</th>
+                                <th style="width: 10%">节点</th>
+                                <th style="width: 20%">工程</th>
+                                <th>备注</th>
+                                <th style="width: 20%">操作</th>
+                            </tr>
+                            </thead>
+                            <tbody id="project-list">
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+{% block js %}
+    <script>
+        $(document).ready(function () {
+            $.ajax({
+                url: '/api/node/detail/',
+                data: {nid: $("#nid").val()},
+                type: 'get',
+                success: function (res) {
+                    console.log(res);
+                    $("input[name='name']").val(res.name);
+                    $("input[name='ip']").val(res.ip);
+                    $("textarea[name='description']").val(res.description);
+                }
+            })
+        });
+    </script>
+
+    <script>
+        function ProjectList() {
+            $.ajax({
+                url: '/api/project/',
+                data: {nid: $("#nid").val()},
+                type: 'get',
+                success: function (res) {
+                    var tbody = '';
+                    $.each(res, function (k, v) {
+                        tbody +=
+                            '<tr><td>' + parseInt(k + 1) + '</td>' +
+                            '<td>' + v.address + '</td>' +
+                            '<td>' + v.name + '</td>' +
+                            '<td>' + v.description + '</td>' +
+                            '<td><button type="button" data="' + v.id + '" class="btn btn-xs" onclick="ProjectDelete(this)">删除</button></td></tr>';
+                    });
+                    $('#project-list').html(tbody);
+                }
+            })
+        }
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            ProjectList()
+        });
+    </script>
+    <script>
+        function ProjectDelete(obj) {
+            if (confirm("确认要删除吗？")) {
+                $.ajax({
+                    url: '/api/project/',
+                    type: 'post',
+                    data: {id: $(obj).attr('data')},
+                    success: function (res) {
+                        ProjectList()
+                    }
+                })
+            }
+        }
+    </script>
+
+    <script>
+        $('#project-depoly').click(function () {
+            var formdata = new FormData();
+            formdata.append('project', $('#project-file')[0].files[0]);
+            formdata.append("csrfmiddlewaretoken", $("[name='csrfmiddlewaretoken']").val());
+            formdata.append('description', $("textarea[name='project-description']").val());
+            formdata.append('address', $("input[name='ip']").val());
+            $.ajax({
+                url: '/api/project/upload/',
+                type: 'post',
+                data: formdata,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                }
+            })
+        })
+    </script>
+{% endblock %}
