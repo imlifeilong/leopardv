@@ -36,6 +36,13 @@
         .table {
             table-layout: fixed;
         }
+
+        #tip {
+            display: none;
+            position: absolute;
+            top: 10%;
+            width: 40%;
+        }
     </style>
     {% block css %}
     {% endblock %}
@@ -102,6 +109,7 @@
     </aside>
     <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
+        <div id="tip" class="col-lg-6 col-xs-offset-2"></div>
         {% block content %}
 
         {% endblock %}
@@ -129,6 +137,19 @@
 <!-- page script -->
 <script src="/static/js/echarts.common.min.js"></script>
 <script src="/static/js/macarons.js"></script>
+<script>
+    function Tip(msg) {
+        $('#tip').html('');
+        $('#tip').append(msg);
+        $('#tip').css('z-index', 999);
+        $('#tip').css('display', 'block');
+
+        setTimeout(function () {
+            $('#tip').fadeToggle('slow')
+        }, 1000);
+
+    }
+</script>
 <script>
     $(function () {
         $('.select2').select2();

@@ -1,0 +1,77 @@
+{% extends 'index.html' %}
+{% block content %}
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1>
+            作业管理
+        </h1>
+
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i> 主页</a></li>
+            <li><a href="#">作业管理</a></li>
+        </ol>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="box">
+                    <div class="box-body">
+                        <table class="table table-bordered">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>节点</th>
+                                <th>工程</th>
+                                <th>爬虫</th>
+                                <th>开始时间</th>
+                                <th>结束时间</th>
+                                <th>日志</th>
+                            </tr>
+                            </thead>
+                            <tbody id="spider-list">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="box-footer clearfix">
+                        <ul class="pagination pagination-sm no-margin pull-right" id="project-pages">
+
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- /.content -->
+{% endblock %}
+{% block js %}
+
+    <script type="text/javascript">
+        $.ajax({
+            url: '/api/job/view/',
+            type: 'post',
+            dataType: 'json',
+            data: {
+                data: urlRequest('nid') + ',' + urlRequest('project') + ',' + urlRequest('spider'),
+            },
+            success: function (res) {
+                var tr_tag = '';
+                $.each(res.spiders, function (index, spider) {
+                    tr_tag += '<tr><td>' + spider.id.substring(0,11) +
+                    '</td><td>' + res.node +
+                        '</td><td>' + res.project +
+                        '</td><td>' + spider.spider +
+                        '</td><td>' + spider.start_time +
+                        '</td><td>' + spider.end_time +
+                        '</td><td>' + '<a href="/log/?nid='+ res.nid + '&project=' +res.project + '&spider=' +
+                        spider.spider + '&job=' + spider.id+
+                        '" target="_blank">查看</a>' +
+                        '</td></tr>';
+                });
+                $('#spider-list').html(tr_tag);
+            }
+        })
+
+    </script>
+{% endblock %}

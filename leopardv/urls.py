@@ -24,7 +24,8 @@ urlpatterns = [
     path('', views.index),
     path('node/', views.node),
     path('node/<str:nid>', views.node_detail),
-
+    path('project/', views.project),
+    path('job/', views.job),
 
     path('api/', include('api.urls')),
 

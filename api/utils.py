@@ -2,6 +2,8 @@ import random
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 from scrapyd_api import ScrapydAPI
+import os
+import shutil
 
 
 def get_valid_img(request):
@@ -70,3 +72,28 @@ def scrapyd_obj(url):
         return ScrapydAPI(url, timeout=1)
     except:
         return
+
+
+def delete_file(file):
+    path = os.path.splitext(file)[0]
+    if os.path.exists(file):
+        # 删除部署文件
+        os.remove(file)
+    if os.path.exists(path):
+        # 删除部署目录
+        shutil.rmtree(path)
+
+
+def modify_file(src, content):
+    # 修改文件
+    old = open(src, 'r')
+    lines = ''
+    for line in old.readlines():
+        if 'url =' in line:
+            line = '%s\n' % content
+        lines += line
+    old.close()
+    os.remove(src)
+    new = open(src, 'w')
+    print(lines, file=new)
+    new.close()

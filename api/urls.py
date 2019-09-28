@@ -23,6 +23,7 @@ urlpatterns = [
     path('node/', views.NodeList.as_view()),
     path('node/detail/', views.NodeDetail.as_view()),
     path('project/', views.ProjectList.as_view()),
+    path('job/', views.JobList.as_view()),
     path('project/upload/', views.project_upload),
 
 ]

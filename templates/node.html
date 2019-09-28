@@ -159,7 +159,7 @@
                 success: function (res) {
                     $.each(res, function (k, v) {
 
-                        var show = v.description.length > 10 ? v.description.substring(0, 15) + '.....<a href="javascript:void(0);" onclick="showDesc(' + k + ')">更多</a>' : v.description;
+                        var show = v.description.length > 10 ? v.description.substring(0, 15) + '… <a href="javascript:void(0);" onclick="showDesc(' + k + ')">更多</a>' : v.description;
                         var hide = v.description + '<a href="javascript:void(0);" onclick="hideDesc(' + k + ')"> 收起</a>';
                         tbody += '<tr><td>' + parseInt(k + 1) + '</td>' +
                             '<td id="' + v.nid + '" class="node-status">' + parseStatus(v.status) + '</td>' +

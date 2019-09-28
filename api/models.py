@@ -1,6 +1,9 @@
 from django.db import models
+from django.utils import timezone
 from django.contrib.auth.models import User
+
 import uuid
+
 
 
 class Node(models.Model):
@@ -32,11 +35,13 @@ class Project(models.Model):
     user = models.ForeignKey(User, on_delete='models.CASCADE')
     name = models.CharField(max_length=128)
     file = models.FileField(upload_to='deploy')
-    address = models.CharField(max_length=520)
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True, default='')
+    node = models.ForeignKey(Node, on_delete='models.CASCADE', default=None)
+
+    add_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return '<%s %s>' % (self.name, self.address)
+        return '<%s %s>' % (self.name, self.node.ip)
 
     class Meta:
         verbose_name_plural = 'Project'

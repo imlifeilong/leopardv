@@ -10,6 +10,7 @@
         </ol>
     </section>
     <section class="content">
+
         <div class="row">
             <div class="col-xs-12">
                 <div class="box">
@@ -33,6 +34,7 @@
 
                                     <div class="col-sm-7">
                                         <input type="text" name="ip" class="form-control" readonly>
+                                        <input hidden name="port">
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -82,6 +84,7 @@
                                 <th style="width: 10%">节点</th>
                                 <th style="width: 20%">工程</th>
                                 <th>备注</th>
+                                <th style="width: 15%">部署时间</th>
                                 <th style="width: 20%">操作</th>
                             </tr>
                             </thead>
@@ -103,9 +106,9 @@
                 data: {nid: $("#nid").val()},
                 type: 'get',
                 success: function (res) {
-                    console.log(res);
                     $("input[name='name']").val(res.name);
                     $("input[name='ip']").val(res.ip);
+                    $("input[name='port']").val(res.port);
                     $("textarea[name='description']").val(res.description);
                 }
             })
@@ -123,9 +126,10 @@
                     $.each(res, function (k, v) {
                         tbody +=
                             '<tr><td>' + parseInt(k + 1) + '</td>' +
-                            '<td>' + v.address + '</td>' +
+                            '<td>' + v.node + '</td>' +
                             '<td>' + v.name + '</td>' +
                             '<td>' + v.description + '</td>' +
+                            '<td>' + v.add_time + '</td>' +
                             '<td><button type="button" data="' + v.id + '" class="btn btn-xs" onclick="ProjectDelete(this)">删除</button></td></tr>';
                     });
                     $('#project-list').html(tbody);
@@ -145,14 +149,17 @@
                 $.ajax({
                     url: '/api/project/',
                     type: 'post',
-                    data: {id: $(obj).attr('data')},
+                    data: {id: $(obj).attr('data'), nid: $("#nid").val()},
                     success: function (res) {
-                        ProjectList()
+                        var tip = '<a class="btn btn-block btn-social bg-olive"><i class="icon fa fa-check"></i> 提示！' + res.msg + '</a>';
+                        ProjectList();
+                        Tip(tip);
                     }
                 })
             }
         }
     </script>
+
 
     <script>
         $('#project-depoly').click(function () {
@@ -160,7 +167,8 @@
             formdata.append('project', $('#project-file')[0].files[0]);
             formdata.append("csrfmiddlewaretoken", $("[name='csrfmiddlewaretoken']").val());
             formdata.append('description', $("textarea[name='project-description']").val());
-            formdata.append('address', $("input[name='ip']").val());
+            formdata.append('nid', $("#nid").val());
+
             $.ajax({
                 url: '/api/project/upload/',
                 type: 'post',
@@ -168,6 +176,15 @@
                 processData: false,
                 contentType: false,
                 success: function (res) {
+                    if (res.status == 1) {
+                        var tip = '<a class="btn btn-block btn-social bg-olive"><i class="icon fa fa-check"></i> 提示！' + res.msg + '</a>';
+                        ProjectList();
+                        $('#project-file').val('');
+                        $("textarea[name='project-description']").val('');
+                    } else {
+                        var tip = '<a class="btn btn-block btn-social btn-warning"><i class="icon fa fa-warning"></i> 警告！' + res.msg + '</a>';
+                    }
+                    Tip(tip);
                 }
             })
         })

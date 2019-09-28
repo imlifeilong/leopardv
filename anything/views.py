@@ -17,6 +17,14 @@ def node_detail(request, nid):
     return render(request, 'node_detail.html', {'nid': nid})
 
 
+def job(request):
+    return render(request, 'job.html')
+
+
+def project(request):
+    return render(request, 'project.html')
+
+
 @api_view(['GET', 'POST'])
 def login(request):
     result = {'status': 1, 'msg': None, 'data': None}

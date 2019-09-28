@@ -16,6 +16,8 @@ class ProjectSerializer(serializers.ModelSerializer):
     '''
     工程序列号
     '''
+    add_time = serializers.DateTimeField(format="%Y-%m-%d %X")
+    node = serializers.CharField(source='node.ip')
     class Meta:
         model = Project
-        fields = ('id', 'name', 'address', 'description')
+        fields = ('id', 'name', 'node', 'description', 'add_time')
