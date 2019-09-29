@@ -60,6 +60,9 @@
                             </div>
                             <div class="box-footer">
                                 <div class="col-lg-9">
+                                    <button type="button" class="btn pull-right" id="project-mapping"
+                                            style="margin-left: 10px;">映射工程
+                                    </button>
                                     <button type="button" class="btn pull-right" id="project-depoly"> 部 署</button>
                                 </div>
                             </div>
@@ -181,6 +184,32 @@
                         ProjectList();
                         $('#project-file').val('');
                         $("textarea[name='project-description']").val('');
+                    } else {
+                        var tip = '<a class="btn btn-block btn-social btn-warning"><i class="icon fa fa-warning"></i> 警告！' + res.msg + '</a>';
+                    }
+                    Tip(tip);
+                }
+            })
+        })
+    </script>
+    <script>
+        $('#project-mapping').click(function () {
+            var formdata = new FormData();
+            formdata.append("csrfmiddlewaretoken", $("[name='csrfmiddlewaretoken']").val());
+            formdata.append('nid', $("#nid").val());
+
+            $.ajax({
+                url: '/api/project/mapping/',
+                type: 'post',
+                data: formdata,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    console.log(res);
+                    ProjectList();
+                    if (res.status == 1) {
+                        var tip = '<a class="btn btn-block btn-social bg-olive"><i class="icon fa fa-check"></i> 提示！' + res.msg + '</a>';
+
                     } else {
                         var tip = '<a class="btn btn-block btn-social btn-warning"><i class="icon fa fa-warning"></i> 警告！' + res.msg + '</a>';
                     }

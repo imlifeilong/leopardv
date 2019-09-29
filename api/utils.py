@@ -97,3 +97,10 @@ def modify_file(src, content):
     new = open(src, 'w')
     print(lines, file=new)
     new.close()
+
+def get_pages(total, per):
+    # 分页计算器
+    page = int(total / per)
+    if total % per != 0:
+        page += 1
+    return page

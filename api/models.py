@@ -10,7 +10,7 @@ class Node(models.Model):
     '''节点'''
     nid = models.UUIDField(default=uuid.uuid4, primary_key=True, null=False)
     name = models.CharField(max_length=255, default=None)
-    ip = models.GenericIPAddressField(null=True, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True, unique=True)
     port = models.IntegerField(default=6800, blank=True, null=True)
     status = models.IntegerField(default=1, blank=True, null=True)
     description = models.TextField(blank=True, null=True)

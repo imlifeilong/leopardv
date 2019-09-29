@@ -25,5 +25,6 @@ urlpatterns = [
     path('project/', views.ProjectList.as_view()),
     path('job/', views.JobList.as_view()),
     path('project/upload/', views.project_upload),
+    path('project/mapping/', views.project_mapping),
 
 ]

@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.conf import settings
 from django.contrib.auth.models import User
 
 from rest_framework.views import APIView
@@ -11,7 +12,7 @@ import zipfile
 
 from api.models import Node, Deploy, Project
 from api.serializers import NodeSerializer, ProjectSerializer
-from api.utils import get_valid_img, uri, scrapyd_obj, delete_file, modify_file
+from api.utils import get_valid_img, uri, scrapyd_obj, delete_file, modify_file, get_pages
 
 
 def verify(request):
@@ -73,7 +74,6 @@ class ProjectList(APIView):
         node = self.get_single(nid)
         projects = Project.objects.filter(user=User.objects.get(username=username), node=node)
         serializer = ProjectSerializer(projects, many=True)
-
         return Response(serializer.data)
 
     def post(self, request):
@@ -83,10 +83,16 @@ class ProjectList(APIView):
         node = Node.objects.get(nid=request.POST.get('nid'))
         scrapyd = scrapyd_obj(uri(node.ip, node.port))
         if scrapyd:
-            # 删除部署的工程
-            scrapyd.delete_project(project.name)
-        # 删除文件
-        delete_file(project.file.path)
+            if project.name in scrapyd.list_projects():
+                # 删除部署的工程
+                scrapyd.delete_project(project.name)
+
+        if project.file:
+            # 删除文件
+            delete_file(project.file.path)
+        else:
+            delete_file(settings.MEDIA_ROOT + '/deploy/%s.zip' % project.name)
+
         # 删除记录
         project.delete()
         result['msg'] = '工程 %s 已经删除！' % project.name
@@ -100,6 +106,7 @@ class JobList(APIView):
     def get(self, request):
         per = 10
         result = {'status': 1, 'msg': None, 'data': None}
+        page = int(request.GET.get('page', 1))
         # 当前用户所有spider
         user = User.objects.get(username=request.session['username'])
         spiders_list = []
@@ -120,7 +127,8 @@ class JobList(APIView):
                                     for spider in spiders]
                 spiders_list.extend(spiders_tmp_list)
         result['data'] = {}
-        result['data']['spiders'] = spiders_list
+        result['data']['pages'] = get_pages(len(spiders_list), per)
+        result['data']['spiders'] = spiders_list[(page - 1) * per:page * per]
         result['data']['projects'] = projects_list
         return Response(result)
 
@@ -129,58 +137,78 @@ class JobList(APIView):
 def project_upload(request):
     # 工程部署
     result = {'status': 1, 'msg': None, 'data': None}
-    try:
-        if request.method == 'POST':
-            file = request.FILES.get('project')
-            # 判断是否上传文件
-            if not file:
-                result['status'], result['msg'] = 0, '请选择上传工程文件'
-                return Response(result)
-            description = request.POST.get('description')
-            node = Node.objects.get(nid=request.POST.get('nid'))
-            user = User.objects.get(username=request.session['username'])
 
-            name = file.name.replace('.zip', '') if file else ''
+    if request.method == 'POST':
+        file = request.FILES.get('project')
+        # 判断是否上传文件
+        if not file:
+            result['status'], result['msg'] = 0, '请选择上传工程文件'
+            return Response(result)
+        description = request.POST.get('description')
+        node = Node.objects.get(nid=request.POST.get('nid'))
+        user = User.objects.get(username=request.session['username'])
 
-            # 已经上传过，删除记录和文件，重传
-            deploy = Project.objects.filter(name=name, node=node, user=user)
+        name = file.name.replace('.zip', '') if file else ''
 
-            if deploy:
-                tmp = deploy[0]
-                if os.path.exists(tmp.file.path):
-                    os.remove(tmp.file.path)
-                tmp.delete()
+        # 已经上传过，删除记录和文件，重传
+        deploy = Project.objects.filter(name=name, node=node, user=user)
 
-            new_obj = Project.objects.create(name=name, file=file, node=node, user=user, description=description)
-            # 解压文件
-            f = zipfile.ZipFile(new_obj.file.path)
-            filepath = os.path.split(new_obj.file.path)[0]
-            f.extractall(path=filepath)
-            f.close()
+        if deploy:
+            tmp = deploy[0]
+            # 部署之前删除之前的zip文件
+            if tmp.file and os.path.exists(tmp.file.path):
+                os.remove(tmp.file.path)
+            else:
+                os.remove(settings.MEDIA_ROOT + '/deploy/%s.zip' % tmp.name)
+            tmp.delete()
 
-            # 修改配置文件
-            url = 'http://%s:%s/' % (node.ip, node.port)
-            config_file = os.path.join(filepath, name + os.sep + 'scrapy.cfg')
-            modify_file(config_file, 'url = %s' % url)
+        new_obj = Project.objects.create(name=name, file=file, node=node, user=user, description=description)
 
-            # 部署文件
-            scrapyd = scrapyd_obj(url)
-            if scrapyd:
-                # 删除原来版本
-                versions = scrapyd.list_versions(name)
-                for v in versions:
-                    scrapyd.delete_version(name, v)
+        # 解压文件
+        f = zipfile.ZipFile(new_obj.file.path)
+        filepath = os.path.split(new_obj.file.path)[0]
+        f.extractall(path=filepath)
+        f.close()
 
-                cur_dir = os.getcwd()
-                # 重新部署
-                os.chdir(os.path.join(filepath, name))
+        # 修改配置文件
+        url = 'http://%s:%s/' % (node.ip, node.port)
+        config_file = os.path.join(filepath, name + os.sep + 'scrapy.cfg')
+        modify_file(config_file, 'url = %s' % url)
 
-                with os.popen('scrapyd-deploy') as cmd:
-                    print(cmd.read())
+        # 部署文件
+        scrapyd = scrapyd_obj(url)
+        if scrapyd:
+            # 删除原来版本
+            versions = scrapyd.list_versions(name)
+            for v in versions:
+                scrapyd.delete_version(name, v)
 
-                os.chdir(cur_dir)
+            cur_dir = os.getcwd()
+            # 重新部署
+            os.chdir(os.path.join(filepath, name))
 
-        result['msg'] = '%s 工程部署成功！' % name
-    except Exception as e:
-        result['msg'] = str(e)
+            with os.popen('scrapyd-deploy') as cmd:
+                print(cmd.read())
+
+            os.chdir(cur_dir)
+
+    result['msg'] = '%s 工程部署成功！' % name
+
+    return Response(result)
+
+
+@api_view(['POST'])
+def project_mapping(request):
+    # 映射scrapyd的工程到记录表中
+    result = {'status': 1, 'msg': None, 'data': None}
+    if request.method == 'POST':
+        user = User.objects.get(username=request.session['username'])
+        node = Node.objects.get(nid=request.POST.get('nid'))
+        scrapyd = scrapyd_obj(uri(node.ip, node.port))
+        if scrapyd:
+            for project in scrapyd.list_projects():
+                Project.objects.get_or_create(name=project, node=node, user=user)
+
+    result['msg'] = '映射执行成功！'
+
     return Response(result)

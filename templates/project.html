@@ -61,8 +61,9 @@
                             <ul class="pagination pagination-sm no-margin pull-right" id="project-pages">
                             </ul>
                         </div>
-                        <div class="col-sm-1 pull-right" id="pages-count">
+                        <div id="pages-count">
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -134,181 +135,227 @@
 
         });
     </script>
+    <script>
+        $('#jump').click(function () {
+            var jump_page = $("[name='page-jump']").val();
+            if (jump_page) {
+                HomePage(jump_page)
+            }
+        })
+
+    </script>
+    <script>
+        function HomePage(page) {
+            var page = parseInt(page);
+            $.ajax({
+                url: '/api/job/?page=' + page,
+                type: 'get',
+                dataType: 'json',
+                success: function (res) {
+                    console.log(res, page);
+                    Render(res.data, page);
+                    if (res.data.pages > 0) {
+                        if (page == 1) {
+                            last = 1;
+                            next = page + 1;
+                        } else if (page >= res.data.pages) {
+                            last = page - 1;
+                            next = res.data.pages;
+                        } else {
+                            last = page - 1;
+                            next = page + 1;
+                        }
+                        var page_html = '<li><a onclick="HomePage(1)" title="首页">«</a></li>';
+                        page_html += '<li><a onclick="HomePage(' + last + ')">' + '上一页' + '</a></li>';
+                        page_html += '<li><a onclick="HomePage(' + next + ')">' + '下一页' + '</a></li>';
+                        page_html += '<li><a onclick="HomePage(' + res.data.pages + ')" title="尾页">»</a></li>';
+                        $('#project-pages').html(page_html);
+                        $('#pages-count').html('<span style="margin-top: 5px;display: block;">页数 ' + page + '/' + res.data.pages + '  <input type="text" name="page-jump" style="width: 3%;margin: 0px 8px;"><a href="javascript:void(0);" id="jump">跳转</a></span>');
+
+                    }
+                }
+            })
+        }
+    </script>
+    <script>
+        $(document).ready(function () {
+            HomePage(2)
+        })
+    </script>
+
+    <script>
+        //渲染列表
+        function Render(res, page) {
+            var tr_tag = '';
+            $.each(res.spiders, function (index, spider) {
+                if (spider.status) {
+                    var data = spider.node + ',' + spider.project + ',' + spider.job + ',' + spider.name;
+                    var action = '停止';
+                    var info = 'btn-danger';
+                    var fun = 'StopSpider'
+
+                } else {
+                    var data = spider.node + ',' + spider.project + ',' + spider.name;
+                    var action = '启动';
+                    var info = 'btn-success';
+                    var fun = 'StartSpider'
+                }
+                tr_tag += '<tr><td>' + parseInt((page - 1) * 10 + index + 1) +
+                    '</td><td>' + spider.project + '</td><td>' + spider.spider + '</td>' +
+
+                    '<td><button type="button" data="' + data +
+                    '" class="btn ' + info + ' btn-xs" onclick="' + fun + '(this)">' + action +
+                    '</button>  ' +
+                    // '<button type="button" nid="' +
+                    // spider.node + '" project="' + spider.project + '" spider="' + spider.name +
+                    // '" class="btn btn-success btn-xs" onclick="ScheduleJob(this)">' + '调度作业' +
+                    // '</button> ' +
+                    '<button type="button" nid="' +
+                    spider.node + '" project="' + spider.project + '" spider="' + spider.name +
+                    '" class="btn btn-success btn-xs" onclick="ViewJob(this)">' + '查看作业' +
+                    '</button></td></tr>';
+            });
+            $('#spider-list').html(tr_tag);
+        }
+    </script>
 
     <!--     <script>
-            //渲染列表
-            function Render(res) {
-                var tr_tag = '';
-                $.each(res.spiders, function (index, spider) {
-                    ind = parseInt((res.cur - 1) * 10) + parseInt(index);
+        function HomePage(page) {
+            $.ajax({
+                url: '/api/job/?page=' + page,
+                type: 'get',
+                dataType: 'json',
+                success: function (res) {
+                    // 下拉框
+                    var options = '<option>------</option>';
+                    $.each(res.projects, function (index, project) {
+                        options += '<option>' + project + '</option>';
+                    });
+                    $('#project-select').html(options);
+                    // 爬虫列表
+                    Render(res);
+                    if (res.pages > 0) {
+                        // 分页
+                        var page = '<li><a onclick="HomePage(1)" title="首页">«</a></li>';
+                        if (res.pages == 1) {
+                            var next = res.cur;
+                            var last = res.cur;
+                        } else if (res.cur == res.pages) {
+                            var next = res.cur;
+                            var last = parseInt(res.cur) - 1;
+                        } else {
+                            if (res.cur == 1) {
+                                var last = res.cur;
+                            } else {
+                                var last = parseInt(res.cur) - 1;
+                            }
+                            var next = parseInt(res.cur) + 1;
+                        }
+                        page += '<li><a onclick="HomePage(' + last + ')">' + '上一页' + '</a></li>';
+                        page += '<li><a onclick="HomePage(' + next + ')">' + '下一页' + '</a></li>';
+                        page += '<li><a onclick="HomePage(' + res.pages + ')" title="尾页">»</a></li>';
+                        $('#project-pages').html(page);
+                        $('#pages-count').html('<span style="margin-top: 5px;margin-left: 20px;display: block;">页数 ' + res.cur + '/' + res.pages + '</span>');
+                    } else {
+                        $('#project-pages').html('');
+                    }
+                }
+            })
+        }
+    </script>
+    <script>
+        $(document).ready(function () {
+            HomePage(1)
+        })
+    </script>
+    <script type="text/javascript">
+        // 过滤工程
+        $("select#project-select").change(function () {
+            GetSpiderList($(this).val(), 1, $('#select2-status-select-container').text())
+        });
+    </script>
+    <script type="text/javascript">
+        // 过滤状态
+        $("select#status-select").change(function () {
+            GetSpiderList($('#select2-project-select-container').text(), 1, $(this).val())
+        });
+    </script>
 
-                    if (spider.status) {
-                        var data = spider.node + ',' + spider.project + ',' + spider.job + ',' + spider.name;
-                        var action = '停止';
-                        var info = 'btn-danger';
-                        var fun = 'StopSpider'
+    <script type="text/javascript">
+        //爬虫列表
+        function GetSpiderList(project, page, status) {
+            $.ajax({
+                url: '/api/job/',
+                type: 'post',
+                data: {project: project, page: page, status: status},
+                dataType: 'json',
+                success: function (res) {
+                    // 爬虫列表
+                    Render(res);
+                    // 分页
+                    if (res.pages > 0) {
+                        var page = '<li><a onclick="GetSpiderList(' + "'" + project + "'" + ',' + '1,' + "'" + status + "'" + ')">«</a></li>';
+
+                        for (var i = 1; i <= res.pages; i++) {
+                            page += '<li><a onclick="GetSpiderList(' + "'" + project + "'" + ',' + i + ',' + "'" + status + "'" + ')">' + i + '</a></li>';
+                        }
+                        page += '<li><a onclick="GetSpiderList(' + "'" + project + "'" + ',' + res.pages + ',' + "'" + status + "'" + ')">»</a></li>';
+                        $('#project-pages').html(page);
 
                     } else {
-                        var data = spider.node + ',' + spider.project + ',' + spider.name;
-                        var action = '启动';
-                        var info = 'btn-success';
-                        var fun = 'StartSpider'
+                        $('#project-pages').html('');
                     }
-                    tr_tag += '<tr><td>' + ind +
-                        '</td><td>' + spider.project +
-                        '</td><td>' + spider.name +
-                        '</td><td><button type="button" data="' + data +
-                        '" class="btn ' + info + ' btn-xs" onclick="' + fun + '(this)">' + action +
-                        '</button>  ' +
-                        // '<button type="button" nid="' +
-                        // spider.node + '" project="' + spider.project + '" spider="' + spider.name +
-                        // '" class="btn btn-success btn-xs" onclick="ScheduleJob(this)">' + '调度作业' +
-                        // '</button> ' +
-                        '<button type="button" nid="' +
-                        spider.node + '" project="' + spider.project + '" spider="' + spider.name +
-                        '" class="btn btn-success btn-xs" onclick="ViewJob(this)">' + '查看作业' +
-                        '</button></td></tr>';
-                });
-                $('#spider-list').html(tr_tag);
-            }
-        </script>
-        <script>
-            function HomePage(page) {
-                $.ajax({
-                    url: '/api/job/?page=' + page,
-                    type: 'get',
-                    dataType: 'json',
-                    success: function (res) {
-                        // 下拉框
-                        var options = '<option>------</option>';
-                        $.each(res.projects, function (index, project) {
-                            options += '<option>' + project + '</option>';
-                        });
-                        $('#project-select').html(options);
-                        // 爬虫列表
-                        Render(res);
-                        if (res.pages > 0) {
-                            // 分页
-                            var page = '<li><a onclick="HomePage(1)" title="首页">«</a></li>';
-                            if (res.pages == 1) {
-                                var next = res.cur;
-                                var last = res.cur;
-                            } else if (res.cur == res.pages) {
-                                var next = res.cur;
-                                var last = parseInt(res.cur) - 1;
-                            } else {
-                                if (res.cur == 1) {
-                                    var last = res.cur;
-                                } else {
-                                    var last = parseInt(res.cur) - 1;
-                                }
-                                var next = parseInt(res.cur) + 1;
-                            }
-                            page += '<li><a onclick="HomePage(' + last + ')">' + '上一页' + '</a></li>';
-                            page += '<li><a onclick="HomePage(' + next + ')">' + '下一页' + '</a></li>';
-                            page += '<li><a onclick="HomePage(' + res.pages + ')" title="尾页">»</a></li>';
-                            $('#project-pages').html(page);
-                            $('#pages-count').html('<span style="margin-top: 5px;margin-left: 20px;display: block;">页数 ' + res.cur + '/' + res.pages + '</span>');
-                        } else {
-                            $('#project-pages').html('');
-                        }
-                    }
-                })
-            }
-        </script>
-        <script>
-            $(document).ready(function () {
-                HomePage(1)
+                }
             })
-        </script>
-        <script type="text/javascript">
-            // 过滤工程
-            $("select#project-select").change(function () {
-                GetSpiderList($(this).val(), 1, $('#select2-status-select-container').text())
-            });
-        </script>
-        <script type="text/javascript">
-            // 过滤状态
-            $("select#status-select").change(function () {
-                GetSpiderList($('#select2-project-select-container').text(), 1, $(this).val())
-            });
-        </script>
-
-        <script type="text/javascript">
-            //爬虫列表
-            function GetSpiderList(project, page, status) {
-                $.ajax({
-                    url: '/api/job/',
-                    type: 'post',
-                    data: {project: project, page: page, status: status},
-                    dataType: 'json',
-                    success: function (res) {
-                        // 爬虫列表
-                        Render(res);
-                        // 分页
-                        if (res.pages > 0) {
-                            var page = '<li><a onclick="GetSpiderList(' + "'" + project + "'" + ',' + '1,' + "'" + status + "'" + ')">«</a></li>';
-
-                            for (var i = 1; i <= res.pages; i++) {
-                                page += '<li><a onclick="GetSpiderList(' + "'" + project + "'" + ',' + i + ',' + "'" + status + "'" + ')">' + i + '</a></li>';
-                            }
-                            page += '<li><a onclick="GetSpiderList(' + "'" + project + "'" + ',' + res.pages + ',' + "'" + status + "'" + ')">»</a></li>';
-                            $('#project-pages').html(page);
-
-                        } else {
-                            $('#project-pages').html('');
-                        }
-                    }
-                })
-            }
-        </script>
-        <script>
-            //启动作业
-            function StartSpider(obj) {
-                $.ajax({
-                    url: '/api/spider/start/',
-                    type: 'post',
-                    dataType: 'json',
-                    data: {data: $(obj).attr("data")},
-                    success: function (res) {
-                        $(obj).attr('onclick', 'StopSpider(this)');
-                        $(obj).attr('data', res.node + ',' + res.project + ',' + res.job + ',' + res.spider);
-                        $(obj).attr('class', 'btn btn-danger btn-xs');
-                        $(obj).text('停止');
-                    }
-                })
-            }
-        </script>
-        <script>
-            //停止作业
-            function StopSpider(obj) {
-                $.ajax({
-                    url: '/api/spider/stop/',
-                    type: 'post',
-                    dataType: 'json',
-                    data: {data: $(obj).attr("data")},
-                    success: function (res) {
-                        $(obj).attr('onclick', 'StartSpider(this)');
-                        $(obj).attr('data', res.node + ',' + res.project + ',' + res.spider);
-                        $(obj).attr('class', 'btn btn-success btn-xs');
-                        $(obj).text('启动');
-                    }
-                })
-            }
-        </script>
-        <script type="text/javascript">
-            function ViewJob(obj) {
-                //location.href = '/task/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
-                //    "&spider=" + $(obj).attr("spider");
-                window.open('/task/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
-                    "&spider=" + $(obj).attr("spider"), "_blank");
-            }
-        </script>
-        <script type="text/javascript">
-            function ScheduleJob(obj) {
-                window.open('/schedule/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
-                    "&spider=" + $(obj).attr("spider"), "_blank");
-            }
-        </script> -->
+        }
+    </script>
+    <script>
+        //启动作业
+        function StartSpider(obj) {
+            $.ajax({
+                url: '/api/spider/start/',
+                type: 'post',
+                dataType: 'json',
+                data: {data: $(obj).attr("data")},
+                success: function (res) {
+                    $(obj).attr('onclick', 'StopSpider(this)');
+                    $(obj).attr('data', res.node + ',' + res.project + ',' + res.job + ',' + res.spider);
+                    $(obj).attr('class', 'btn btn-danger btn-xs');
+                    $(obj).text('停止');
+                }
+            })
+        }
+    </script>
+    <script>
+        //停止作业
+        function StopSpider(obj) {
+            $.ajax({
+                url: '/api/spider/stop/',
+                type: 'post',
+                dataType: 'json',
+                data: {data: $(obj).attr("data")},
+                success: function (res) {
+                    $(obj).attr('onclick', 'StartSpider(this)');
+                    $(obj).attr('data', res.node + ',' + res.project + ',' + res.spider);
+                    $(obj).attr('class', 'btn btn-success btn-xs');
+                    $(obj).text('启动');
+                }
+            })
+        }
+    </script>
+    <script type="text/javascript">
+        function ViewJob(obj) {
+            //location.href = '/task/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
+            //    "&spider=" + $(obj).attr("spider");
+            window.open('/task/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
+                "&spider=" + $(obj).attr("spider"), "_blank");
+        }
+    </script>
+    <script type="text/javascript">
+        function ScheduleJob(obj) {
+            window.open('/schedule/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
+                "&spider=" + $(obj).attr("spider"), "_blank");
+        }
+    </script> -->
 
 {% endblock %}
