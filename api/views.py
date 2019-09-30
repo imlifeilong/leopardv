@@ -10,7 +10,7 @@ import requests
 import os
 import zipfile
 
-from api.models import Node, Deploy, Project
+from api.models import Node, Deploy, Project, Job
 from api.serializers import NodeSerializer, ProjectSerializer
 from api.utils import get_valid_img, uri, scrapyd_obj, delete_file, modify_file, get_pages
 
@@ -95,6 +95,7 @@ class ProjectList(APIView):
 
         # 删除记录
         project.delete()
+
         result['msg'] = '工程 %s 已经删除！' % project.name
         return Response(result)
 
@@ -102,7 +103,12 @@ class ProjectList(APIView):
 class JobList(APIView):
     # 作业
 
-    # def get_jobs(self):
+    def _get(self, request):
+        per = 10
+        result = {'status': 1, 'msg': None, 'data': None}
+        page = int(request.GET.get('page', 1))
+        # 当前用户所有spider
+
     def get(self, request):
         per = 10
         result = {'status': 1, 'msg': None, 'data': None}
@@ -113,7 +119,6 @@ class JobList(APIView):
         projects_list = []
         nodes_cache = {}
         for project in user.project_set.all():
-
             projects_list.append({'ip': project.node.ip, 'project': project.name})
             if project.node.ip in nodes_cache:
                 scrapyd = nodes_cache[project.node.ip]
@@ -123,13 +128,51 @@ class JobList(APIView):
 
             if scrapyd:
                 spiders = scrapyd.list_spiders(project.name)
-                spiders_tmp_list = [{'node': project.node.nid.__str__(), 'project': project.name, 'spider': spider}
-                                    for spider in spiders]
+                spiders_tmp_list = [{'node': project.node.nid.__str__(), 'project': project.name, 'spider': spider,
+                                     'ip': project.node.ip} for spider in spiders]
                 spiders_list.extend(spiders_tmp_list)
+
+                # for job in spiders_list:
+                #     Job.objects.create(name=job['spider'], project=project, user=user)
+
         result['data'] = {}
         result['data']['pages'] = get_pages(len(spiders_list), per)
+        page = result['data']['pages'] if page >= result['data']['pages'] else page
         result['data']['spiders'] = spiders_list[(page - 1) * per:page * per]
         result['data']['projects'] = projects_list
+        return Response(result)
+
+    def post(self, request):
+        result = {'status': 1, 'msg': None, 'data': None}
+        per = 10
+        page = 1
+        # 处理过滤条件
+        demo = {'node': 'node__ip', 'project': 'name', 'status': 'status'}
+        tmp = request.POST.dict()
+        page = int(tmp.pop('page'))
+        status = int(tmp.pop('status'))
+        condition = {demo[k]: v for k, v in tmp.items() if v not in ('0', '1', '9')}
+
+        # print(status, condition)
+        spiders_list = []
+        user = User.objects.get(username=request.session['username'])
+        # 过滤工程
+        for project in user.project_set.filter(**condition):
+            job_condition = {'project': project.name, 'user': user}
+            if status in (0, 1): job_condition['status'] = status
+            print(status, job_condition)
+            # 过滤作业
+            job_set = Job.objects.filter(**job_condition)
+            print(job_set)
+            for job in job_set:
+                spiders_list.append({'node': project.node.nid.__str__(), 'project': project.name, 'spider': job.name, 'ip': project.node.ip})
+
+        result['data'] = {}
+        result['data']['pages'] = get_pages(len(spiders_list), per)
+        page = result['data']['pages'] if page >= result['data']['pages'] else page
+        result['data']['spiders'] = spiders_list[(page - 1) * per:page * per]
+        # result['data']['projects'] = projects_list
+
         return Response(result)
 
 
@@ -182,14 +225,11 @@ def project_upload(request):
             versions = scrapyd.list_versions(name)
             for v in versions:
                 scrapyd.delete_version(name, v)
-
             cur_dir = os.getcwd()
             # 重新部署
             os.chdir(os.path.join(filepath, name))
-
             with os.popen('scrapyd-deploy') as cmd:
                 print(cmd.read())
-
             os.chdir(cur_dir)
 
     result['msg'] = '%s 工程部署成功！' % name
@@ -211,4 +251,26 @@ def project_mapping(request):
 
     result['msg'] = '映射执行成功！'
 
+    return Response(result)
+
+
+@api_view(['POST'])
+def job_mapping(request):
+    result = {'status': 1, 'msg': None, 'data': None}
+    if request.method == 'POST':
+        user = User.objects.get(username=request.session['username'])
+        node = Node.objects.get(nid=request.POST.get('nid'))
+        project = Project.objects.get(pk=request.POST.get('id'))
+        status = request.POST.get('status')
+        scrapyd = scrapyd_obj(uri(node.ip, node.port))
+        if scrapyd:
+            spiders_list = scrapyd.list_spiders(project.name)
+            for spider in spiders_list:
+                job = Job.objects.get_or_create(name=spider, project=project.name, user=user)
+                job[0].status = status
+                job[0].save()
+
+            project.status = status
+            project.save()
+            result['msg'] = '修改成功！'
     return Response(result)

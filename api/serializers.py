@@ -20,4 +20,4 @@ class ProjectSerializer(serializers.ModelSerializer):
     node = serializers.CharField(source='node.ip')
     class Meta:
         model = Project
-        fields = ('id', 'name', 'node', 'description', 'add_time')
+        fields = ('id', 'name', 'node', 'status', 'description', 'add_time')

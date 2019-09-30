@@ -86,13 +86,13 @@
                                 <th style="width: 5%">序号</th>
                                 <th style="width: 10%">节点</th>
                                 <th style="width: 20%">工程</th>
+                                <th style="width: 5%">显示</th>
                                 <th>备注</th>
                                 <th style="width: 15%">部署时间</th>
                                 <th style="width: 20%">操作</th>
                             </tr>
                             </thead>
                             <tbody id="project-list">
-
                             </tbody>
                         </table>
                     </div>
@@ -127,13 +127,17 @@
                 success: function (res) {
                     var tbody = '';
                     $.each(res, function (k, v) {
+                        var chked = v.status == 1 ? "checked" : "";
                         tbody +=
                             '<tr><td>' + parseInt(k + 1) + '</td>' +
                             '<td>' + v.node + '</td>' +
                             '<td>' + v.name + '</td>' +
+                            '<td id="check' + v.id + '"><input type="checkbox" ' + chked + '></td>' +
                             '<td>' + v.description + '</td>' +
                             '<td>' + v.add_time + '</td>' +
-                            '<td><button type="button" data="' + v.id + '" class="btn btn-xs" onclick="ProjectDelete(this)">删除</button></td></tr>';
+                            '<td><button type="button" data="' + v.id + '" class="btn btn-xs" onclick="ProjectEdit(this)">修改</button> ' +
+                            '<button type="button" data="' + v.id + '" class="btn btn-xs" onclick="ProjectDelete(this)">删除</button>' +
+                            '</td></tr>';
                     });
                     $('#project-list').html(tbody);
                 }
@@ -160,6 +164,22 @@
                     }
                 })
             }
+        }
+    </script>
+    <script>
+        function ProjectEdit(obj) {
+            var status = $('#check' + $(obj).attr('data')).children('input').is(':checked') ? 1 : 0
+            $.ajax({
+                url: '/api/job/mapping/',
+                type: 'post',
+                data: {id: $(obj).attr('data'), nid: $('#nid').val(), status: status},
+                success: function (res) {
+                    var tip = '<a class="btn btn-block btn-social bg-olive"><i class="icon fa fa-check"></i> 提示！' + res.msg + '</a>';
+                    ProjectList();
+                    Tip(tip);
+                }
+            })
+
         }
     </script>
 

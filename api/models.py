@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 import uuid
 
 
-
 class Node(models.Model):
     '''节点'''
     nid = models.UUIDField(default=uuid.uuid4, primary_key=True, null=False)
@@ -37,6 +36,7 @@ class Project(models.Model):
     file = models.FileField(upload_to='deploy')
     description = models.TextField(blank=True, null=True, default='')
     node = models.ForeignKey(Node, on_delete='models.CASCADE', default=None)
+    status = models.IntegerField(default=1, blank=True, null=True)
 
     add_time = models.DateTimeField(auto_now_add=True)
 
@@ -45,6 +45,24 @@ class Project(models.Model):
 
     class Meta:
         verbose_name_plural = 'Project'
+
+
+class Job(models.Model):
+    user = models.ForeignKey(User, on_delete='models.CASCADE')
+    name = models.CharField(max_length=128)
+    status = models.IntegerField(default=1, blank=True, null=True)
+    description = models.TextField(blank=True, null=True, default='')
+    project = models.CharField(max_length=128, default='')
+    add_time = models.DateTimeField(auto_now_add=True)
+
+    start_time = models.DateTimeField(blank=True, null=True)
+    stop_time = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return '<%s %s>' % (self.name, self.project)
+
+    class Meta:
+        verbose_name_plural = 'Job'
 
 
 class Deploy(models.Model):

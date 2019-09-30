@@ -29,10 +29,16 @@
             <div class="form-group" style="margin-top: 15px;">
                 <label>选择状态</label>
                 <select class="form-control select2" id="status-select" style="width: 100%;">
-                    <option>------</option>
-                    <option>运行</option>
-                    <option>停止</option>
+                    <option value=9>------</option>
+                    <option value=1>运行</option>
+                    <option value=0>停止</option>
                 </select>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group" style="margin-top: 15px;">
+                <label></label>
+                <input class="form-control" type="button" value="搜索" id="project-search" style="width: 50%;">
             </div>
         </div>
     </section>
@@ -47,6 +53,7 @@
                             <thead>
                             <tr>
                                 <th>序号</th>
+                                <th>节点</th>
                                 <th>工程</th>
                                 <th>爬虫</th>
                                 <th>操作</th>
@@ -56,14 +63,18 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="box-footer clearfix">
+                    <div class="box-footer clearfix" id="page">
                         <div class="col-sm-2 pull-right">
                             <ul class="pagination pagination-sm no-margin pull-right" id="project-pages">
                             </ul>
                         </div>
-                        <div id="pages-count">
+                        <div id="pages-count" class="col-sm-1">
+                            <span style="margin-top: 5px;display: block;"></span>
                         </div>
-
+                        <div class="col-sm-2 pull-left">
+                            <input type="number" name="page-jump" style="width: 20%;margin: 0px 8px;">
+                            <input type="button" id="jump" value="跳转">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -80,7 +91,7 @@
                 dataType: 'json',
                 success: function (res) {
                     var node_cache = new Set();
-                    var options = '<option>------</option>';
+                    var options = '<option value=9>------</option>';
                     $.each(res, function (k, v) {
 
                         if (!node_cache.has(v.ip)) {
@@ -99,7 +110,7 @@
                 type: 'get',
                 dataType: 'json',
                 success: function (res) {
-                    var options = '<option>------</option>';
+                    var options = '<option value=9>------</option>';
                     $.each(res.data.projects, function (k, v) {
                         options += '<option>' + v.project + '</option>';
                     });
@@ -120,7 +131,7 @@
                     data: {nid: nid},
                     type: 'get',
                     success: function (res) {
-                        var options = '<option>------</option>';
+                        var options = '<option value=9>------</option>';
                         $.each(res, function (k, v) {
                             options += '<option>' + v.name + '</option>';
                         });
@@ -135,32 +146,26 @@
 
         });
     </script>
-    <script>
-        $('#jump').click(function () {
-            var jump_page = $("[name='page-jump']").val();
-            if (jump_page) {
-                HomePage(jump_page)
-            }
-        })
 
-    </script>
     <script>
         function HomePage(page) {
             var page = parseInt(page);
             $.ajax({
-                url: '/api/job/?page=' + page,
+                url: '/api/job/',
+                data: {page: page},
                 type: 'get',
                 dataType: 'json',
                 success: function (res) {
-                    console.log(res, page);
-                    Render(res.data, page);
+                    // 计算分页
                     if (res.data.pages > 0) {
-                        if (page == 1) {
+                        if (page <= 1) {
                             last = 1;
                             next = page + 1;
+                            page = 1;
                         } else if (page >= res.data.pages) {
                             last = page - 1;
                             next = res.data.pages;
+                            page = res.data.pages;
                         } else {
                             last = page - 1;
                             next = page + 1;
@@ -170,16 +175,16 @@
                         page_html += '<li><a onclick="HomePage(' + next + ')">' + '下一页' + '</a></li>';
                         page_html += '<li><a onclick="HomePage(' + res.data.pages + ')" title="尾页">»</a></li>';
                         $('#project-pages').html(page_html);
-                        $('#pages-count').html('<span style="margin-top: 5px;display: block;">页数 ' + page + '/' + res.data.pages + '  <input type="text" name="page-jump" style="width: 3%;margin: 0px 8px;"><a href="javascript:void(0);" id="jump">跳转</a></span>');
-
+                        $('#pages-count span').text('页数 ' + page + '/' + res.data.pages);
                     }
+                    Render(res, page)
                 }
             })
         }
     </script>
     <script>
         $(document).ready(function () {
-            HomePage(2)
+            HomePage(1);
         })
     </script>
 
@@ -187,7 +192,7 @@
         //渲染列表
         function Render(res, page) {
             var tr_tag = '';
-            $.each(res.spiders, function (index, spider) {
+            $.each(res.data.spiders, function (index, spider) {
                 if (spider.status) {
                     var data = spider.node + ',' + spider.project + ',' + spider.job + ',' + spider.name;
                     var action = '停止';
@@ -201,7 +206,7 @@
                     var fun = 'StartSpider'
                 }
                 tr_tag += '<tr><td>' + parseInt((page - 1) * 10 + index + 1) +
-                    '</td><td>' + spider.project + '</td><td>' + spider.spider + '</td>' +
+                    '</td><td>' + spider.ip + '</td><td>' + spider.project + '</td><td>' + spider.spider + '</td>' +
 
                     '<td><button type="button" data="' + data +
                     '" class="btn ' + info + ' btn-xs" onclick="' + fun + '(this)">' + action +
@@ -218,7 +223,69 @@
             $('#spider-list').html(tr_tag);
         }
     </script>
+    <script>
+        $("#jump").on("click", function () {
+            var jump_page = $("[name='page-jump']").val();
+            if (jump_page) {
+                if (jump_page < 1) {
+                    HomePage(1)
+                } else {
+                    HomePage(jump_page)
+                }
+            }
+        });
+    </script>
+    <script>
+        function GetSpiderList(page) {
+            var node = $('select#node-select').val();
+            var project = $('select#project-select').val();
+            var status = $('select#status-select').val();
+            console.log(node, project, status)
+            $.ajax({
+                url: '/api/job/',
+                data: {node: node, project: project, status: status, page: page},
+                type: 'post',
+                dataType: 'json',
+                success: function (res) {
+                    if (res.data.spiders.length > 0) {
+                        // 计算分页
+                        if (res.data.pages > 0) {
+                            if (page <= 1) {
+                                last = 1;
+                                next = page + 1;
+                                page = 1;
+                            } else if (page >= res.data.pages) {
+                                last = page - 1;
+                                next = res.data.pages;
+                                page = res.data.pages;
+                            } else {
+                                last = page - 1;
+                                next = page + 1;
+                            }
+                            var page_html = '<li><a onclick="GetSpiderList(1)" title="首页">«</a></li>';
+                            page_html += '<li><a onclick="GetSpiderList(' + last + ')">' + '上一页' + '</a></li>';
+                            page_html += '<li><a onclick="GetSpiderList(' + next + ')">' + '下一页' + '</a></li>';
+                            page_html += '<li><a onclick="GetSpiderList(' + res.data.pages + ')" title="尾页">»</a></li>';
+                            $('#project-pages').html(page_html);
+                            $('#pages-count span').text('页数 ' + page + '/' + res.data.pages);
+                        }
 
+                    } else {
+                        $('#page').html('');
+                    }
+                    Render(res, page)
+                }
+
+            })
+
+        }
+    </script>
+    <script>
+        $("#project-search").on("click", function () {
+            GetSpiderList(1)
+        })
+
+    </script>
     <!--     <script>
         function HomePage(page) {
             $.ajax({
