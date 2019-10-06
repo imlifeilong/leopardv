@@ -38,7 +38,8 @@
         <div class="col-md-2">
             <div class="form-group" style="margin-top: 15px;">
                 <label></label>
-                <input class="form-control" type="button" value="搜索" id="project-search" style="width: 50%;">
+                <input class="form-control" type="button" value="搜索" id="project-search"
+                       style="border-radius: 3px;width: 50%;">
             </div>
         </div>
     </section>
@@ -63,15 +64,15 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="box-footer clearfix" id="page">
-                        <div class="col-sm-2 pull-right">
+                    <div class="box-footer clearfix" id="page" style="display: none">
+                        <div class=" pull-right">
                             <ul class="pagination pagination-sm no-margin pull-right" id="project-pages">
                             </ul>
                         </div>
                         <div id="pages-count" class="col-sm-1">
                             <span style="margin-top: 5px;display: block;"></span>
                         </div>
-                        <div class="col-sm-2 pull-left">
+                        <div class="pull-left">
                             <input type="number" name="page-jump" style="width: 20%;margin: 0px 8px;">
                             <input type="button" id="jump" value="跳转">
                         </div>
@@ -106,6 +107,22 @@
 
             // 渲染工程过滤条件
             $.ajax({
+                url: '/api/project/?nid=999',
+                type: 'get',
+                dataType: 'json',
+                success: function (res) {
+                    var options = '<option value=9>------</option>';
+                    $.each(res, function (k, v) {
+                        if (v.status == 1) {
+                            options += '<option>' + v.name + '</option>';
+                        }
+                    });
+
+                    $('#project-select').html(options);
+                }
+            });
+            /*
+            $.ajax({
                 url: '/api/job/',
                 type: 'get',
                 dataType: 'json',
@@ -119,6 +136,7 @@
                 }
 
             })
+             */
         })
 
     </script>
@@ -141,9 +159,6 @@
 
                 })
             }
-
-            //GetSpiderList($(this).val(), 1, $('#select2-status-select-container').text())
-
         });
     </script>
 
@@ -156,28 +171,34 @@
                 type: 'get',
                 dataType: 'json',
                 success: function (res) {
-                    // 计算分页
-                    if (res.data.pages > 0) {
-                        if (page <= 1) {
-                            last = 1;
-                            next = page + 1;
-                            page = 1;
-                        } else if (page >= res.data.pages) {
-                            last = page - 1;
-                            next = res.data.pages;
-                            page = res.data.pages;
-                        } else {
-                            last = page - 1;
-                            next = page + 1;
+                    if (res.data.spiders.length > 0) {
+                        $('#page').css('display', 'block');
+                        // 计算分页
+                        if (res.data.pages > 0) {
+                            if (page <= 1) {
+                                last = 1;
+                                next = page + 1;
+                                page = 1;
+                            } else if (page >= res.data.pages) {
+                                last = page - 1;
+                                next = res.data.pages;
+                                page = res.data.pages;
+                            } else {
+                                last = page - 1;
+                                next = page + 1;
+                            }
+                            // 渲染分页
+                            var page_html = '<li><a onclick="HomePage(1)" title="首页">«</a></li>';
+                            page_html += '<li><a onclick="HomePage(' + last + ')">' + '上一页' + '</a></li>';
+                            page_html += '<li><a onclick="HomePage(' + next + ')">' + '下一页' + '</a></li>';
+                            page_html += '<li><a onclick="HomePage(' + res.data.pages + ')" title="尾页">»</a></li>';
+                            $('#project-pages').html(page_html);
+                            $('#pages-count span').text('页数 ' + page + '/' + res.data.pages);
                         }
-                        var page_html = '<li><a onclick="HomePage(1)" title="首页">«</a></li>';
-                        page_html += '<li><a onclick="HomePage(' + last + ')">' + '上一页' + '</a></li>';
-                        page_html += '<li><a onclick="HomePage(' + next + ')">' + '下一页' + '</a></li>';
-                        page_html += '<li><a onclick="HomePage(' + res.data.pages + ')" title="尾页">»</a></li>';
-                        $('#project-pages').html(page_html);
-                        $('#pages-count span').text('页数 ' + page + '/' + res.data.pages);
+                        Render(res, page)
+                    } else {
+                        $('#page').html('')
                     }
-                    Render(res, page)
                 }
             })
         }
@@ -194,13 +215,13 @@
             var tr_tag = '';
             $.each(res.data.spiders, function (index, spider) {
                 if (spider.status) {
-                    var data = spider.node + ',' + spider.project + ',' + spider.job + ',' + spider.name;
+                    var data = spider.node + ',' + spider.project + ',' + spider.job + ',' + spider.spider;
                     var action = '停止';
                     var info = 'btn-danger';
                     var fun = 'StopSpider'
 
                 } else {
-                    var data = spider.node + ',' + spider.project + ',' + spider.name;
+                    var data = spider.node + ',' + spider.project + ',' + spider.spider;
                     var action = '启动';
                     var info = 'btn-success';
                     var fun = 'StartSpider'
@@ -224,6 +245,7 @@
         }
     </script>
     <script>
+        //跳转页面
         $("#jump").on("click", function () {
             var jump_page = $("[name='page-jump']").val();
             if (jump_page) {
@@ -240,7 +262,6 @@
             var node = $('select#node-select').val();
             var project = $('select#project-select').val();
             var status = $('select#status-select').val();
-            console.log(node, project, status)
             $.ajax({
                 url: '/api/job/',
                 data: {node: node, project: project, status: status, page: page},
@@ -248,6 +269,7 @@
                 dataType: 'json',
                 success: function (res) {
                     if (res.data.spiders.length > 0) {
+                        $('#page').css('display', 'block');
                         // 计算分页
                         if (res.data.pages > 0) {
                             if (page <= 1) {
@@ -262,6 +284,7 @@
                                 last = page - 1;
                                 next = page + 1;
                             }
+
                             var page_html = '<li><a onclick="GetSpiderList(1)" title="首页">«</a></li>';
                             page_html += '<li><a onclick="GetSpiderList(' + last + ')">' + '上一页' + '</a></li>';
                             page_html += '<li><a onclick="GetSpiderList(' + next + ')">' + '下一页' + '</a></li>';
@@ -286,7 +309,57 @@
         })
 
     </script>
-    <!--     <script>
+    <script>
+        //启动作业
+        function StartSpider(obj) {
+            $.ajax({
+                url: '/api/job/start/',
+                type: 'post',
+                dataType: 'json',
+                data: {data: $(obj).attr("data")},
+                success: function (res) {
+                    $(obj).attr('onclick', 'StopSpider(this)');
+                    $(obj).attr('data', res.node + ',' + res.project + ',' + res.job + ',' + res.spider);
+                    $(obj).attr('class', 'btn btn-danger btn-xs');
+                    $(obj).text('停止');
+                }
+            })
+        }
+    </script>
+    <script>
+        //停止作业
+        function StopSpider(obj) {
+            $.ajax({
+                url: '/api/job/stop/',
+                type: 'post',
+                dataType: 'json',
+                data: {data: $(obj).attr("data")},
+                success: function (res) {
+                    $(obj).attr('onclick', 'StartSpider(this)');
+                    $(obj).attr('data', res.node + ',' + res.project + ',' + res.spider);
+                    $(obj).attr('class', 'btn btn-success btn-xs');
+                    $(obj).text('启动');
+                }
+            })
+        }
+    </script>
+
+    <script type="text/javascript">
+        function ViewJob(obj) {
+            //location.href = '/task/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
+            //    "&spider=" + $(obj).attr("spider");
+            window.open('/task/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
+                "&spider=" + $(obj).attr("spider"), "_blank");
+        }
+    </script>
+    <!--
+    <script type="text/javascript">
+        function ScheduleJob(obj) {
+            window.open('/schedule/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
+                "&spider=" + $(obj).attr("spider"), "_blank");
+        }
+    </script>
+    <script>
         function HomePage(page) {
             $.ajax({
                 url: '/api/job/?page=' + page,
@@ -330,11 +403,6 @@
             })
         }
     </script>
-    <script>
-        $(document).ready(function () {
-            HomePage(1)
-        })
-    </script>
     <script type="text/javascript">
         // 过滤工程
         $("select#project-select").change(function () {
@@ -348,81 +416,6 @@
         });
     </script>
 
-    <script type="text/javascript">
-        //爬虫列表
-        function GetSpiderList(project, page, status) {
-            $.ajax({
-                url: '/api/job/',
-                type: 'post',
-                data: {project: project, page: page, status: status},
-                dataType: 'json',
-                success: function (res) {
-                    // 爬虫列表
-                    Render(res);
-                    // 分页
-                    if (res.pages > 0) {
-                        var page = '<li><a onclick="GetSpiderList(' + "'" + project + "'" + ',' + '1,' + "'" + status + "'" + ')">«</a></li>';
-
-                        for (var i = 1; i <= res.pages; i++) {
-                            page += '<li><a onclick="GetSpiderList(' + "'" + project + "'" + ',' + i + ',' + "'" + status + "'" + ')">' + i + '</a></li>';
-                        }
-                        page += '<li><a onclick="GetSpiderList(' + "'" + project + "'" + ',' + res.pages + ',' + "'" + status + "'" + ')">»</a></li>';
-                        $('#project-pages').html(page);
-
-                    } else {
-                        $('#project-pages').html('');
-                    }
-                }
-            })
-        }
-    </script>
-    <script>
-        //启动作业
-        function StartSpider(obj) {
-            $.ajax({
-                url: '/api/spider/start/',
-                type: 'post',
-                dataType: 'json',
-                data: {data: $(obj).attr("data")},
-                success: function (res) {
-                    $(obj).attr('onclick', 'StopSpider(this)');
-                    $(obj).attr('data', res.node + ',' + res.project + ',' + res.job + ',' + res.spider);
-                    $(obj).attr('class', 'btn btn-danger btn-xs');
-                    $(obj).text('停止');
-                }
-            })
-        }
-    </script>
-    <script>
-        //停止作业
-        function StopSpider(obj) {
-            $.ajax({
-                url: '/api/spider/stop/',
-                type: 'post',
-                dataType: 'json',
-                data: {data: $(obj).attr("data")},
-                success: function (res) {
-                    $(obj).attr('onclick', 'StartSpider(this)');
-                    $(obj).attr('data', res.node + ',' + res.project + ',' + res.spider);
-                    $(obj).attr('class', 'btn btn-success btn-xs');
-                    $(obj).text('启动');
-                }
-            })
-        }
-    </script>
-    <script type="text/javascript">
-        function ViewJob(obj) {
-            //location.href = '/task/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
-            //    "&spider=" + $(obj).attr("spider");
-            window.open('/task/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
-                "&spider=" + $(obj).attr("spider"), "_blank");
-        }
-    </script>
-    <script type="text/javascript">
-        function ScheduleJob(obj) {
-            window.open('/schedule/?nid=' + $(obj).attr("nid") + "&project=" + $(obj).attr("project") +
-                "&spider=" + $(obj).attr("spider"), "_blank");
-        }
-    </script> -->
+     -->
 
 {% endblock %}

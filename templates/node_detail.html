@@ -214,9 +214,14 @@
     </script>
     <script>
         $('#project-mapping').click(function () {
+            var projects = [];
+            $('#project-list tr').each(function () {
+                projects.push($(this).find('td')[2].textContent)
+            });
             var formdata = new FormData();
             formdata.append("csrfmiddlewaretoken", $("[name='csrfmiddlewaretoken']").val());
             formdata.append('nid', $("#nid").val());
+            formdata.append('projects', projects);
 
             $.ajax({
                 url: '/api/project/mapping/',

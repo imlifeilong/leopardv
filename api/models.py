@@ -53,6 +53,7 @@ class Job(models.Model):
     status = models.IntegerField(default=1, blank=True, null=True)
     description = models.TextField(blank=True, null=True, default='')
     project = models.CharField(max_length=128, default='')
+    node = models.CharField(max_length=128, default='')
     add_time = models.DateTimeField(auto_now_add=True)
 
     start_time = models.DateTimeField(blank=True, null=True)
@@ -63,17 +64,3 @@ class Job(models.Model):
 
     class Meta:
         verbose_name_plural = 'Job'
-
-
-class Deploy(models.Model):
-    '''部署文件'''
-    user = models.ForeignKey(User, on_delete='models.CASCADE')
-    name = models.CharField(max_length=128)
-    file = models.FileField(upload_to='deploy')
-    address = models.CharField(max_length=520)
-
-    def __str__(self):
-        return '<%s %s>' % (self.name, self.address)
-
-    class Meta:
-        verbose_name_plural = 'Deploy'

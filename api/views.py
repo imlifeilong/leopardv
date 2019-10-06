@@ -10,7 +10,7 @@ import requests
 import os
 import zipfile
 
-from api.models import Node, Deploy, Project, Job
+from api.models import Node, Project, Job
 from api.serializers import NodeSerializer, ProjectSerializer
 from api.utils import get_valid_img, uri, scrapyd_obj, delete_file, modify_file, get_pages
 
@@ -69,11 +69,15 @@ class ProjectList(APIView):
         return Node.objects.get(nid=nid)
 
     def get(self, request):
-        username = request.session['username']
+        condition = {}
+        condition['user'] = User.objects.get(username=request.session['username'])
         nid = request.GET.get('nid')
-        node = self.get_single(nid)
-        projects = Project.objects.filter(user=User.objects.get(username=username), node=node)
+        if not nid.startswith('999'):
+            condition['node'] = self.get_single(nid)
+
+        projects = Project.objects.filter(**condition)
         serializer = ProjectSerializer(projects, many=True)
+
         return Response(serializer.data)
 
     def post(self, request):
@@ -102,13 +106,6 @@ class ProjectList(APIView):
 
 class JobList(APIView):
     # 作业
-
-    def _get(self, request):
-        per = 10
-        result = {'status': 1, 'msg': None, 'data': None}
-        page = int(request.GET.get('page', 1))
-        # 当前用户所有spider
-
     def get(self, request):
         per = 10
         result = {'status': 1, 'msg': None, 'data': None}
@@ -118,34 +115,47 @@ class JobList(APIView):
         spiders_list = []
         projects_list = []
         nodes_cache = {}
-        for project in user.project_set.all():
-            projects_list.append({'ip': project.node.ip, 'project': project.name})
-            if project.node.ip in nodes_cache:
-                scrapyd = nodes_cache[project.node.ip]
+        for job in Job.objects.filter(user=user):
+
+            if job.node in nodes_cache:
+                node = nodes_cache[job.node]
             else:
-                scrapyd = scrapyd_obj(uri(project.node.ip, project.node.port))
-                nodes_cache[project.node.ip] = scrapyd
+                node = Node.objects.get(pk=job.node)
+            nodes_cache[job.node] = node
+            if job.status == 1:
+                spiders_list.append({'node': job.node, 'project': job.project, 'spider': job.name, 'ip': node.ip})
 
-            if scrapyd:
-                spiders = scrapyd.list_spiders(project.name)
-                spiders_tmp_list = [{'node': project.node.nid.__str__(), 'project': project.name, 'spider': spider,
-                                     'ip': project.node.ip} for spider in spiders]
-                spiders_list.extend(spiders_tmp_list)
-
-                # for job in spiders_list:
-                #     Job.objects.create(name=job['spider'], project=project, user=user)
+            project_dict = {'ip': node.ip, 'project': job.project}
+            if project_dict not in projects_list and job.status == 1:
+                projects_list.append({'ip': node.ip, 'project': job.project})
+            # for project in user.project_set.all():
+            #     projects_list.append({'ip': project.node.ip, 'project': project.name})
+            #     if project.node.ip in nodes_cache:
+            #         scrapyd = nodes_cache[project.node.ip]
+            #     else:
+            #         scrapyd = scrapyd_obj(uri(project.node.ip, project.node.port))
+            #         nodes_cache[project.node.ip] = scrapyd
+            #
+            #     if scrapyd:
+            #         spiders = scrapyd.list_spiders(project.name)
+            #         spiders_tmp_list = [{'node': project.node.nid.__str__(), 'project': project.name, 'spider': spider,
+            #                              'ip': project.node.ip} for spider in spiders]
+            #         spiders_list.extend(spiders_tmp_list)
+            #
+            #         # for job in spiders_list:
+            #         #     Job.objects.create(name=job['spider'], project=project, user=user)
 
         result['data'] = {}
         result['data']['pages'] = get_pages(len(spiders_list), per)
         page = result['data']['pages'] if page >= result['data']['pages'] else page
         result['data']['spiders'] = spiders_list[(page - 1) * per:page * per]
         result['data']['projects'] = projects_list
+
         return Response(result)
 
     def post(self, request):
         result = {'status': 1, 'msg': None, 'data': None}
         per = 10
-        page = 1
         # 处理过滤条件
         demo = {'node': 'node__ip', 'project': 'name', 'status': 'status'}
         tmp = request.POST.dict()
@@ -153,19 +163,19 @@ class JobList(APIView):
         status = int(tmp.pop('status'))
         condition = {demo[k]: v for k, v in tmp.items() if v not in ('0', '1', '9')}
 
-        # print(status, condition)
         spiders_list = []
         user = User.objects.get(username=request.session['username'])
         # 过滤工程
         for project in user.project_set.filter(**condition):
             job_condition = {'project': project.name, 'user': user}
             if status in (0, 1): job_condition['status'] = status
-            print(status, job_condition)
             # 过滤作业
             job_set = Job.objects.filter(**job_condition)
-            print(job_set)
+
             for job in job_set:
-                spiders_list.append({'node': project.node.nid.__str__(), 'project': project.name, 'spider': job.name, 'ip': project.node.ip})
+                if job.status == 1:
+                    spiders_list.append({'node': project.node.nid.__str__(), 'project': project.name, 'spider': job.name,
+                                     'ip': project.node.ip})
 
         result['data'] = {}
         result['data']['pages'] = get_pages(len(spiders_list), per)
@@ -244,8 +254,16 @@ def project_mapping(request):
     if request.method == 'POST':
         user = User.objects.get(username=request.session['username'])
         node = Node.objects.get(nid=request.POST.get('nid'))
+        projects = request.POST.get('projects').split(',')
+
         scrapyd = scrapyd_obj(uri(node.ip, node.port))
         if scrapyd:
+            # 删除未部署的记录
+            for project in set(projects) - set(scrapyd.list_projects()):
+                if project:
+                    project_obj = Project.objects.get(name=project, node=node, user=user)
+                    project_obj.delete()
+            # 映射部署到记录表
             for project in scrapyd.list_projects():
                 Project.objects.get_or_create(name=project, node=node, user=user)
 
@@ -256,6 +274,7 @@ def project_mapping(request):
 
 @api_view(['POST'])
 def job_mapping(request):
+    # 修改爬虫状态
     result = {'status': 1, 'msg': None, 'data': None}
     if request.method == 'POST':
         user = User.objects.get(username=request.session['username'])
@@ -266,7 +285,7 @@ def job_mapping(request):
         if scrapyd:
             spiders_list = scrapyd.list_spiders(project.name)
             for spider in spiders_list:
-                job = Job.objects.get_or_create(name=spider, project=project.name, user=user)
+                job = Job.objects.get_or_create(name=spider, project=project.name, user=user, node=project.node.nid)
                 job[0].status = status
                 job[0].save()
 
@@ -274,3 +293,49 @@ def job_mapping(request):
             project.save()
             result['msg'] = '修改成功！'
     return Response(result)
+
+
+@api_view(['GET', 'POST'])
+def job_start(request):
+    # 启动爬虫
+    result = {}
+    if request.method == 'POST':
+        data = request.POST.dict()
+        nid, project, spider = data['data'].split(',')
+
+        node = Node.objects.get(nid=nid)
+        scrapyd = scrapyd_obj(uri(node.ip, node.port))
+        if scrapyd:
+            result['job'] = scrapyd.schedule(project, spider)
+        result['node'] = nid
+        result['project'] = project
+        result['spider'] = spider
+        return Response(result)
+
+
+@api_view(['GET', 'POST'])
+def job_stop(request):
+    # 停止爬虫
+    def _is_alive(scrapyd, project, jid):
+        for job in scrapyd.list_jobs(project)['running']:
+            if job['id'] == jid:
+                return True
+
+    result = {}
+    if request.method == 'POST':
+        data = request.POST.dict()
+        nid, project, jid, spider = data['data'].split(',')
+        node = Node.objects.get(nid=nid)
+        scrapyd = scrapyd_obj(uri(node.ip, node.port))
+        if scrapyd:
+            scrapyd.cancel(project, jid)
+
+            # 强制停止
+            if _is_alive(scrapyd, project, jid):
+                scrapyd.cancel(project, jid, 'KILL')
+
+        result['node'] = nid
+        result['project'] = project
+        result['spider'] = spider
+
+        return Response(result)

@@ -30,4 +30,7 @@ urlpatterns = [
     path('job/', views.JobList.as_view()),
     path('job/mapping/', views.job_mapping),
 
+    path('job/start/', views.job_start),
+    path('job/stop/', views.job_stop),
+
 ]
