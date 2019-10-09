@@ -26,6 +26,7 @@ urlpatterns = [
     path('node/<str:nid>', views.node_detail),
     path('project/', views.project),
     path('job/', views.job),
+    path('log/', views.log),
 
     path('api/', include('api.urls')),
 

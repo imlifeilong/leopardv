@@ -24,6 +24,8 @@ def job(request):
 def project(request):
     return render(request, 'project.html')
 
+def log(request):
+    return render(request, 'log.html')
 
 @api_view(['GET', 'POST'])
 def login(request):

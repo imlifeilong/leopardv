@@ -174,8 +174,9 @@ class JobList(APIView):
 
             for job in job_set:
                 if job.status == 1:
-                    spiders_list.append({'node': project.node.nid.__str__(), 'project': project.name, 'spider': job.name,
-                                     'ip': project.node.ip})
+                    spiders_list.append(
+                        {'node': project.node.nid.__str__(), 'project': project.name, 'spider': job.name,
+                         'ip': project.node.ip})
 
         result['data'] = {}
         result['data']['pages'] = get_pages(len(spiders_list), per)
@@ -261,8 +262,13 @@ def project_mapping(request):
             # 删除未部署的记录
             for project in set(projects) - set(scrapyd.list_projects()):
                 if project:
+                    # 删除工程
                     project_obj = Project.objects.get(name=project, node=node, user=user)
                     project_obj.delete()
+                    # 删除作业
+                    job_obj = Job.objects.filter(project=project, node=node.nid, user=user)
+                    job_obj.delete()
+
             # 映射部署到记录表
             for project in scrapyd.list_projects():
                 Project.objects.get_or_create(name=project, node=node, user=user)
@@ -339,3 +345,64 @@ def job_stop(request):
         result['spider'] = spider
 
         return Response(result)
+
+
+@api_view(['GET', 'POST'])
+def job_status(request):
+    def _is_alive(scrapyd, project, jid):
+        for job in scrapyd.list_jobs(project)['running']:
+            if job['id'] == jid:
+                return True
+
+    data = request.POST.dict()
+    nid, project, jid, spider = data['data'].split(',')
+    node = Node.objects.get(nid=nid)
+    scrapyd = scrapyd_obj(uri(node.ip, node.port))
+    if scrapyd:
+        if _is_alive(scrapyd, project, jid):
+            return
+
+    return Response()
+
+
+@api_view(['GET', 'POST'])
+def job_view(request):
+    # 查看作业
+    result = {}
+    if request.method == 'POST':
+        data = request.POST.dict()
+        nid, project, spider = data['data'].split(',')
+        node = Node.objects.get(nid=nid)
+        scrapyd = scrapyd_obj(uri(node.ip, node.port))
+        if scrapyd:
+            jobs = scrapyd.list_jobs(project)
+
+            spiders_list = []
+            for status, job in jobs.items():
+                if status == 'node_name': continue
+                for j in job:
+                    if j['spider'] == spider:
+                        j['start_time'] = j['start_time'][:19] if 'start_time' in j else ''
+                        j['end_time'] = j['end_time'][:19] if 'end_time' in j else ''
+                        spiders_list.append(j)
+            result['spiders'] = spiders_list
+            result['project'] = project
+            result['node'] = node.ip
+            result['port'] = node.port
+            result['nid'] = node.nid
+            return Response(result)
+
+
+@api_view(['GET', 'POST'])
+def log_view(request):
+    result = {'status': 1, 'msg': None, 'data': None}
+    data = request.GET.dict()
+    node = Node.objects.get(nid=data['nid'])
+    url = uri(node.ip, node.port) + '/logs/%s/%s/%s.log' % (data['project'], data['spider'], data['job'])
+    head = requests.head(url)
+    length = int(head.headers['Content-Length'])
+    length = length if length < 10240 else 10240
+    response = requests.get(url, headers={'Range': 'bytes=-%s' % length})
+    txt = response.content.decode().split('\n')[-100:]
+    result['data'] = ''.join(txt)
+    return Response(result)

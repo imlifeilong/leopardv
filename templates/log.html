@@ -1,0 +1,33 @@
+{% extends 'index.html' %}
+{% block content %}
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1>
+            查看日志
+        </h1>
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i> 主页</a></li>
+            <li><a href="#">查看日志</a></li>
+        </ol>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="row">
+            <div class="col-xs-12" style="height:600px; overflow:scroll;" id="log-content"></div>
+        </div>
+    </section>
+    <!-- /.content -->
+{% endblock %}
+{% block js %}
+    <script>
+        $.ajax({
+            url: '/api/log/' + window.location.search,
+            type: 'get',
+            success: function (res) {
+                $('#log-content').html(res.data.replace(/(\r\n|\n|\r)/gm, "<br />"))
+            }
+        })
+
+    </script>
+{% endblock %}

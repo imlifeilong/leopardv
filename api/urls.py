@@ -20,17 +20,21 @@ from api import views
 urlpatterns = [
     # 验证码接口
     path('verify/', views.verify),
+    # 节点
     path('node/', views.NodeList.as_view()),
     path('node/detail/', views.NodeDetail.as_view()),
+    # 工程
     path('project/', views.ProjectList.as_view()),
-
     path('project/upload/', views.project_upload),
     path('project/mapping/', views.project_mapping),
-
+    # 作业
     path('job/', views.JobList.as_view()),
     path('job/mapping/', views.job_mapping),
-
     path('job/start/', views.job_start),
     path('job/stop/', views.job_stop),
+    path('job/view/', views.job_view),
+    path('job/status/', views.job_status),
 
+    # 日志
+    path('log/', views.log_view),
 ]
