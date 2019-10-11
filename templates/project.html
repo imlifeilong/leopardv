@@ -144,6 +144,43 @@
             }
         });
     </script>
+    <script>
+        //渲染列表
+        function Render(res, page) {
+            var tr_tag = '';
+            $.each(res.data.spiders, function (index, spider) {
+                if (spider.status) {
+                    var data = spider.node + ',' + spider.project + ',' + spider.job + ',' + spider.spider;
+                    var action = '停止';
+                    var info = 'btn-danger';
+                    var fun = 'StopSpider';
+                    var status = 1;
+
+                } else {
+                    var data = spider.node + ',' + spider.project + ',' + spider.spider;
+                    var action = '启动';
+                    var info = 'btn-success';
+                    var fun = 'StartSpider';
+                    var status = 0;
+                }
+                tr_tag += '<tr><td>' + parseInt((page - 1) * 10 + index + 1) +
+                    '</td><td>' + spider.ip + '</td><td>' + spider.project + '</td><td>' + spider.spider + '</td>' +
+
+                    '<td><button type="button" status="' + status + '" data="' + data +
+                    '" class="btn ' + info + ' btn-xs btn-list" onclick="' + fun + '(this)">' + action +
+                    '</button>  ' +
+                    // '<button type="button" nid="' +
+                    // spider.node + '" project="' + spider.project + '" spider="' + spider.name +
+                    // '" class="btn btn-success btn-xs" onclick="ScheduleJob(this)">' + '调度作业' +
+                    // '</button> ' +
+                    '<button type="button" nid="' +
+                    spider.node + '" project="' + spider.project + '" spider="' + spider.spider +
+                    '" class="btn btn-success btn-xs" onclick="ViewJob(this)">' + '查看' +
+                    '</button></td></tr>';
+            });
+            $('#spider-list').html(tr_tag);
+        }
+    </script>
 
     <script>
         function HomePage(page) {
@@ -186,43 +223,7 @@
             })
         }
     </script>
-    <script>
-        //渲染列表
-        function Render(res, page) {
-            var tr_tag = '';
-            $.each(res.data.spiders, function (index, spider) {
-                if (spider.status) {
-                    var data = spider.node + ',' + spider.project + ',' + spider.job + ',' + spider.spider;
-                    var action = '停止';
-                    var info = 'btn-danger';
-                    var fun = 'StopSpider';
-                    var status = 1;
 
-                } else {
-                    var data = spider.node + ',' + spider.project + ',' + spider.spider;
-                    var action = '启动';
-                    var info = 'btn-success';
-                    var fun = 'StartSpider';
-                    var status = 0;
-                }
-                tr_tag += '<tr><td>' + parseInt((page - 1) * 10 + index + 1) +
-                    '</td><td>' + spider.ip + '</td><td>' + spider.project + '</td><td>' + spider.spider + '</td>' +
-
-                    '<td><button type="button" status="' + status + '" data="' + data +
-                    '" class="btn ' + info + ' btn-xs" onclick="' + fun + '(this)">' + action +
-                    '</button>  ' +
-                    // '<button type="button" nid="' +
-                    // spider.node + '" project="' + spider.project + '" spider="' + spider.name +
-                    // '" class="btn btn-success btn-xs" onclick="ScheduleJob(this)">' + '调度作业' +
-                    // '</button> ' +
-                    '<button type="button" nid="' +
-                    spider.node + '" project="' + spider.project + '" spider="' + spider.spider +
-                    '" class="btn btn-success btn-xs" onclick="ViewJob(this)">' + '查看作业' +
-                    '</button></td></tr>';
-            });
-            $('#spider-list').html(tr_tag);
-        }
-    </script>
     <script>
         //跳转页面
         $("#jump").on("click", function () {
@@ -340,19 +341,21 @@
     </script>
     <script>
         function StatusSpider() {
+            console.log($('button.btn-list'))
+            /*
             var tr_tags = $('#spider-list tr');
             console.log(tr_tags)
-            for (var i=0;i<tr_tags.length;i++){
+            for (var i = 0; i < tr_tags.length; i++) {
                 console.log(i);
                 var tr = tr_tags.eq(i).find('td');
                 console.log(tr.eq(4))
             }
-            /*
-            console.log('-----------------', $('#spider-list tr'));
-            $('#spider-list').each(function (i) {
-                console.log('===============', $(this).children('td').eq(0))
-            });
-            */
+
+                        console.log('-----------------', $('#spider-list tr'));
+                        $('#spider-list').each(function (i) {
+                            console.log('===============', $(this).children('td').eq(0))
+                        });
+                        */
             /*
             $.ajax({
                 url: '/api/job/status/',

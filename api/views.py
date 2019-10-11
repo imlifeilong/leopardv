@@ -349,18 +349,18 @@ def job_stop(request):
 
 @api_view(['GET', 'POST'])
 def job_status(request):
-    def _is_alive(scrapyd, project, jid):
-        for job in scrapyd.list_jobs(project)['running']:
-            if job['id'] == jid:
-                return True
-
-    data = request.POST.dict()
-    nid, project, jid, spider = data['data'].split(',')
-    node = Node.objects.get(nid=nid)
-    scrapyd = scrapyd_obj(uri(node.ip, node.port))
-    if scrapyd:
-        if _is_alive(scrapyd, project, jid):
-            return
+    # def _is_alive(scrapyd, project, jid):
+    #     for job in scrapyd.list_jobs(project)['running']:
+    #         if job['id'] == jid:
+    #             return True
+    #
+    # data = request.POST.dict()
+    # nid, project, jid, spider = data['data'].split(',')
+    # node = Node.objects.get(nid=nid)
+    # scrapyd = scrapyd_obj(uri(node.ip, node.port))
+    # if scrapyd:
+    #     if _is_alive(scrapyd, project, jid):
+    #         return
 
     return Response()
 
