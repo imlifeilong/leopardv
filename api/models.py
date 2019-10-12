@@ -51,7 +51,7 @@ class Job(models.Model):
     user = models.ForeignKey(User, on_delete='models.CASCADE')
     name = models.CharField(max_length=128)
     status = models.IntegerField(default=1, blank=True, null=True)
-    running = models.IntegerField(default=1, blank=True, null=True)
+    alive = models.IntegerField(default=0, blank=True, null=True)
     description = models.TextField(blank=True, null=True, default='')
     project = models.CharField(max_length=128, default='')
     node = models.CharField(max_length=128, default='')

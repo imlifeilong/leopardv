@@ -69,7 +69,7 @@ def uri(ip, port):
 
 def scrapyd_obj(url):
     try:
-        return ScrapydAPI(url, timeout=5)
+        return ScrapydAPI(url, timeout=10)
     except:
         return
 

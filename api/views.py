@@ -313,6 +313,12 @@ def job_start(request):
         scrapyd = scrapyd_obj(uri(node.ip, node.port))
         if scrapyd:
             result['job'] = scrapyd.schedule(project, spider)
+            # 修改状态
+            job = Job.objects.get(user=User.objects.get(username=request.session['username']), project=project,
+                                  name=spider)
+            job.alive = 1
+            job.save()
+
         result['node'] = nid
         result['project'] = project
         result['spider'] = spider
@@ -339,7 +345,11 @@ def job_stop(request):
             # 强制停止
             if _is_alive(scrapyd, project, jid):
                 scrapyd.cancel(project, jid, 'KILL')
-
+            # 修改状态
+            job = Job.objects.get(user=User.objects.get(username=request.session['username']), project=project,
+                                  name=spider)
+            job.alive = 0
+            job.save()
         result['node'] = nid
         result['project'] = project
         result['spider'] = spider
