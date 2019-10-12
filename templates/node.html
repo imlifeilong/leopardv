@@ -37,64 +37,6 @@
                         </table>
                     </div>
                     <!-- /.box-body -->
-                    <div class="modal fade" id="node-detail-model" style="display: none;">
-                        <div style="position: absolute;left: 35%;top: 25%;border-radius: 8px;width: 50%;height: 40%;">
-
-                            <div class="box">
-                                <div class="box-header with-border">
-                                    <h3 class="box-title">工程列表</h3>
-                                </div>
-                                <table class="table table-bordered table-hover">
-                                    <thead>
-                                    <tr>
-                                        <th>节点</th>
-                                        <th>工程</th>
-                                        <th>操作</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="project-list">
-                                    </tbody>
-                                </table>
-
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /.box-body -->
-                    <div class="modal fade" id="node-deploy" style="display: none;">
-                        <div class="text-center"
-                             style="position: absolute;left: 35%;top: 25%;border-radius: 8px;width: 50%;height: 40%;">
-                            <div class="box">
-                                <div class="box-header with-border">
-                                    <h3 class="box-title">工程部署</h3>
-                                </div>
-                                <!-- /.box-header -->
-                                <!-- form modify start -->
-                                <form action="/api/file/upload/" class="form-horizontal" method="post"
-                                      id="node-deploy-model" enctype="multipart/form-data">
-                                    <div class="box-body">
-                                        <div class="form-group">
-                                            <label for="inputEmail3" class="col-sm-2 control-label">选择工程</label>
-
-                                            <div class="col-sm-9">
-                                                <input type="hidden" name="node-address">
-                                                <input type="file" name="node-file-name" class="form-control">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- /.box-body -->
-                                    <div class="box-footer">
-
-                                        <button type="submit" id="node-deploy-submit" class="btn btn-info pull-right">
-                                            确定
-                                        </button>
-                                    </div>
-                                    <!-- /.box-footer -->
-                                </form>
-                                <!-- form modify end -->
-
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 <!-- /.box -->
             </div>

@@ -50,7 +50,7 @@
             <div class="col-xs-12">
                 <div class="box">
                     <div class="box-body">
-                        <table class="table table-bordered">
+                        <table id="spider-list" class="table table-bordered">
                             <thead>
                             <tr>
                                 <th>序号</th>
@@ -60,8 +60,7 @@
                                 <th>操作</th>
                             </tr>
                             </thead>
-                            <tbody id="spider-list">
-                            </tbody>
+
                         </table>
                     </div>
                     <div class="box-footer clearfix" id="page" style="display: none">
@@ -79,10 +78,18 @@
                     </div>
                 </div>
             </div>
+        </div>
     </section>
     <!-- /.content -->
 {% endblock %}
 {% block js %}
+    <script>
+        function StatusSpider() {
+            $('#spider-list tr').each(function () {
+                console.log($(this));
+            });
+        }
+    </script>
     <script>
         $(document).ready(function () {
             // 渲染节点过滤条件
@@ -147,7 +154,7 @@
     <script>
         //渲染列表
         function Render(res, page) {
-            var tr_tag = '';
+            var tbody = '<tbody>';
             $.each(res.data.spiders, function (index, spider) {
                 if (spider.status) {
                     var data = spider.node + ',' + spider.project + ',' + spider.job + ',' + spider.spider;
@@ -163,7 +170,7 @@
                     var fun = 'StartSpider';
                     var status = 0;
                 }
-                tr_tag += '<tr><td>' + parseInt((page - 1) * 10 + index + 1) +
+                tbody += '<tr><td>' + parseInt((page - 1) * 10 + index + 1) +
                     '</td><td>' + spider.ip + '</td><td>' + spider.project + '</td><td>' + spider.spider + '</td>' +
 
                     '<td><button type="button" status="' + status + '" data="' + data +
@@ -178,10 +185,10 @@
                     '" class="btn btn-success btn-xs" onclick="ViewJob(this)">' + '查看' +
                     '</button></td></tr>';
             });
-            $('#spider-list').html(tr_tag);
+            tbody += '</tbody>';
+            $('#spider-list').append(tbody);
         }
     </script>
-
     <script>
         function HomePage(page) {
             var page = parseInt(page);
@@ -223,7 +230,6 @@
             })
         }
     </script>
-
     <script>
         //跳转页面
         $("#jump").on("click", function () {
@@ -264,7 +270,6 @@
                                 last = page - 1;
                                 next = page + 1;
                             }
-
                             var page_html = '<li><a onclick="GetSpiderList(1)" title="首页">«</a></li>';
                             page_html += '<li><a onclick="GetSpiderList(' + last + ')">' + '上一页' + '</a></li>';
                             page_html += '<li><a onclick="GetSpiderList(' + next + ')">' + '下一页' + '</a></li>';
@@ -283,10 +288,10 @@
         }
     </script>
     <script>
+        // 搜索工程
         $("#project-search").on("click", function () {
             GetSpiderList(1)
         })
-
     </script>
     <script>
         //启动作业
@@ -339,37 +344,7 @@
             StatusSpider()
         })
     </script>
-    <script>
-        function StatusSpider() {
-            console.log($('button.btn-list'))
-            /*
-            var tr_tags = $('#spider-list tr');
-            console.log(tr_tags)
-            for (var i = 0; i < tr_tags.length; i++) {
-                console.log(i);
-                var tr = tr_tags.eq(i).find('td');
-                console.log(tr.eq(4))
-            }
 
-                        console.log('-----------------', $('#spider-list tr'));
-                        $('#spider-list').each(function (i) {
-                            console.log('===============', $(this).children('td').eq(0))
-                        });
-                        */
-            /*
-            $.ajax({
-                url: '/api/job/status/',
-                type: 'post',
-                dataType: 'json',
-                data: {data: data},
-                success: function (res) {
-                    console.log(res)
-                }
-            })
-
-             */
-        }
-    </script>
 
     <!--
     <script type="text/javascript">
