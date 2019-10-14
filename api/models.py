@@ -48,6 +48,7 @@ class Project(models.Model):
 
 
 class Job(models.Model):
+    jid = models.CharField(max_length=128, blank=True, null=True)
     user = models.ForeignKey(User, on_delete='models.CASCADE')
     name = models.CharField(max_length=128)
     status = models.IntegerField(default=1, blank=True, null=True)

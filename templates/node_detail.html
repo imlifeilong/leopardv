@@ -230,7 +230,6 @@
                 processData: false,
                 contentType: false,
                 success: function (res) {
-                    console.log(res);
                     ProjectList();
                     if (res.status == 1) {
                         var tip = '<a class="btn btn-block btn-social bg-olive"><i class="icon fa fa-check"></i> 提示！' + res.msg + '</a>';

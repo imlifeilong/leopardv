@@ -38,8 +38,7 @@
         }
 
         #tip {
-            display: none;
-            position: absolute;
+        {#display: none;#} position: fixed;
             top: 10%;
             width: 40%;
         }
@@ -86,12 +85,6 @@
         <section class="sidebar">
             <!-- sidebar menu: : style can be found in sidebar.less -->
             <ul class="sidebar-menu" data-widget="tree">
-
-                <li>
-                    <a href="/">
-                        <i class="fa fa-dashboard"></i> <span>数据主板</span>
-                    </a>
-                </li>
                 <li>
                     <a href="/node/">
                         <i class="fa fa-server"></i> <span>节点管理</span>
@@ -165,15 +158,15 @@
     })
 </script>
 <script>
-    //$(document).ready(function () {
-     //   $.ajax({
-     //       url: '/api/username/',
-     //       type: 'get',
-     //       success: function (res) {
-     //           $('#username').text(res.username)
-     //       }
-     //   })
-    //});
+    $(document).ready(function () {
+        $.ajax({
+            url: '/api/username/',
+            type: 'get',
+            success: function (res) {
+                $('#username').text(res.username)
+            }
+        })
+    });
 </script>
 <script type="text/javascript">
     //解析params

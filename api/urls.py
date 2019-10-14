@@ -20,6 +20,8 @@ from api import views
 urlpatterns = [
     # 验证码接口
     path('verify/', views.verify),
+
+    path('username/', views.get_username),
     # 节点
     path('node/', views.NodeList.as_view()),
     path('node/detail/', views.NodeDetail.as_view()),
