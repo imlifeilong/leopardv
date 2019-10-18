@@ -27,6 +27,11 @@ SpiderMAN 是基于Django+scrapyd+bootstrap的分布式爬虫管理系统，能�
 查看所有节点服务器得状态，在节点上部署scrapy项目
 ![图片](https://github.com/imlifeilong/leopardv/blob/master/statics/img/node.PNG)
 
+节点详情
+-------------
+查看节点详细情况
+![图片](https://github.com/imlifeilong/leopardv/blob/master/statics/img/node_detail.PNG)
+
 爬虫管理
 -------------
 可以启动、停止爬虫、筛选爬虫
