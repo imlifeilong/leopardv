@@ -283,6 +283,11 @@ def project_mapping(request):
             for project in scrapyd.list_projects():
                 Project.objects.get_or_create(name=project, node=node, user=user)
 
+                for spider in scrapyd.list_spiders(project):
+                    job = Job.objects.get_or_create(name=spider, project=project, user=user, node=node.nid)
+                    job[0].status = 1
+                    job[0].save()
+
     result['msg'] = '映射执行成功！'
 
     return Response(result)
