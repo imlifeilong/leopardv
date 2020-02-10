@@ -5,27 +5,9 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 
-def index(request):
-    return render(request, 'index.html')
-
-
-def node(request):
-    return render(request, 'node.html')
-
-
 def node_detail(request, nid):
     return render(request, 'node_detail.html', {'nid': nid})
 
-
-def job(request):
-    return render(request, 'job.html')
-
-
-def project(request):
-    return render(request, 'project.html')
-
-def log(request):
-    return render(request, 'log.html')
 
 @api_view(['GET', 'POST'])
 def login(request):
